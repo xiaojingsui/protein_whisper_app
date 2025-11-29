@@ -282,6 +282,7 @@ x_all = prot_all[avg_col].astype(float)
 y_all = -np.log10(prot_all[pval_col].astype(float) + 1e-300)
 
 fig, (ax_volc, ax_abun) = plt.subplots(1, 2, figsize=(10, 4))
+fig.subplots_adjust(wspace=0.6)
 fig.tight_layout(pad=3.0)
 
 # Volcano background
