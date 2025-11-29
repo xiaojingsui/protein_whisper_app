@@ -8,25 +8,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
-
 # ============================================================
 # Load peptide-level table (Sheet S1A)
 # ============================================================
 @st.cache_data
 def load_table():
     df = pd.read_excel("Table_S1A.xlsx", header=3)
-
-    df["uniprot_id"] = (
-        df["Protein ID"].astype(str).str.split("|").str[1].str.strip()
-    )
-    df["gene"] = (
-        df["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip()
-    )
+    df["uniprot_id"] = df["Protein ID"].astype(str).split("|").str[1].str.strip()
+    df["gene"] = df["Gene symbol"].astype(str).replace("CELE_", "", regex=False).str.strip()
     return df
 
-
 df = load_table()
-
 
 # ============================================================
 # Load abundance table (Sheet S1B)
@@ -34,18 +26,11 @@ df = load_table()
 @st.cache_data
 def load_abundance_table():
     df2 = pd.read_excel("Table_S1A.xlsx", sheet_name="Protein-level data", header=3)
-
-    df2["uniprot_id"] = (
-        df2["Protein ID"].astype(str).str.split("|").str[1].str.strip()
-    )
-    df2["gene"] = (
-        df2["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip()
-    )
+    df2["uniprot_id"] = df2["Protein ID"].astype(str).split("|").str[1].str.strip()
+    df2["gene"] = df2["Gene symbol"].astype(str).replace("CELE_", "", regex=False).str.strip()
     return df2
 
-
 abun_df = load_abundance_table()
-
 
 # ============================================================
 # Extract conformation-only conditions
@@ -58,9 +43,7 @@ def extract_conditions(df):
             conds.append(m.group(1))
     return sorted(set(conds))
 
-
 conditions = extract_conditions(df)
-
 
 # ============================================================
 # AlphaFold Downloader
@@ -109,7 +92,6 @@ def download_structure(uniprot):
 
     return res.text, model_url, file_format, None
 
-
 # ============================================================
 # 3D Viewer
 # ============================================================
@@ -142,41 +124,28 @@ def render_structure(structure_text, segments, file_format, plddt_coloring):
     view.zoomTo()
     return view
 
-
 # ============================================================
 # Sidebar UI
 # ============================================================
 st.sidebar.header("Protein Search")
 
 query = st.sidebar.text_input("Search gene or UniProt ID:", "")
-
-selected_condition = st.sidebar.selectbox("Select conformation condition:", conditions)
+selected_condition = st.sidebar.selectbox("Conformation condition:", conditions)
 
 fc_cutoff = st.sidebar.number_input(
-    "Fold-change cutoff (|AvgLog₂|, conformation only):",
-    min_value=0.0,
-    max_value=10.0,
-    value=1.0,
-    step=0.1
-)
+    "Fold-change cutoff (|AvgLog₂|):", value=1.0, min_value=0.0, max_value=10.0, step=0.1)
 
 p_cutoff = st.sidebar.number_input(
-    "AdjPval cutoff (conformation only):",
-    min_value=0.0,
-    max_value=1.0,
-    value=0.05,
-    step=0.01
-)
+    "AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
 
 color_mode = st.sidebar.selectbox(
     "Peptide color mode:",
-    ["Peptide type (magenta/teal)", "Fold-change heatmap"]
+    ["Peptide type (red/cyan)", "Fold-change heatmap"]
 )
 
 plddt_coloring = st.sidebar.checkbox(
-    "Color backbone by pLDDT (AlphaFold confidence)", value=False
+    "Color backbone by AlphaFold pLDDT", value=False
 )
-
 
 # ============================================================
 # MAIN UI
@@ -202,7 +171,6 @@ gene = protein["gene"]
 
 st.subheader(f"Protein: **{gene}** ({uniprot})")
 
-
 # ============================================================
 # Conformation Filtering
 # ============================================================
@@ -217,40 +185,36 @@ peps = prot_all[
 ]
 
 if peps.empty:
-    st.warning("No peptides meet conformation FC/Pval filters.")
+    st.warning("No peptides meet conformation filters.")
 else:
-    st.success(f"{len(peps)} peptides highlighted on the structure.")
-
+    st.success(f"{len(peps)} peptides highlighted.")
 
 # ============================================================
-# Build peptide highlight segments
+# Build highlight segments
 # ============================================================
 segments = []
+full_color = "#E1341E"
+half_color = "#1ECBE1"
 
 if not peps.empty:
     if color_mode == "Fold-change heatmap":
         fc_vals = peps[avg_col].astype(float)
         maxfc = max(1.0, float(fc_vals.abs().max()))
-        norm = mcolors.TwoSlopeNorm(vmin=-maxfc, vcenter=0, vmax=maxfc)
         cmap = plt.get_cmap("coolwarm")
+        norm = mcolors.TwoSlopeNorm(vmin=-maxfc, vcenter=0, vmax=maxfc)
 
     for _, row in peps.iterrows():
         start, end = row["Start position"], row["End position"]
         if pd.isna(start) or pd.isna(end):
             continue
 
-        if color_mode == "Peptide type (magenta/teal)":
-            color = "magenta" if row["Peptide type"] == "full" else "teal"
+        if color_mode == "Peptide type (red/cyan)":
+            color = full_color if row["Peptide type"] == "full" else half_color
         else:
             fc = float(row[avg_col])
             color = mcolors.to_hex(cmap(norm(fc)))
 
-        segments.append({
-            "start": int(start),
-            "end": int(end),
-            "color": color
-        })
-
+        segments.append({"start": int(start), "end": int(end), "color": color})
 
 # ============================================================
 # Structure Viewer
@@ -263,17 +227,41 @@ if structure_text is None:
     st.error("No AlphaFold model available.")
     st.warning(error_msg)
 else:
-    st.write(f"Using AlphaFold model: {model_url}")
     viewer = render_structure(structure_text, segments, file_format, plddt_coloring)
     components.html(viewer._make_html(), height=650, scrolling=True)
 
+    # Legend under structure
+    if color_mode == "Peptide type (red/cyan)":
+        st.markdown(
+            f"""
+            <div style="text-align:center; font-size:16px;">
+                <span style="color:{full_color};">● Full peptide</span>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <span style="color:{half_color};">● Half peptide</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # Colorbar for fold-change mode
+    if color_mode == "Fold-change heatmap":
+        st.markdown("**Fold-change color scale:**")
+        fig_cb, ax_cb = plt.subplots(figsize=(6, 0.5))
+
+        cb1 = plt.colorbar(
+            plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+            cax=ax_cb,
+            orientation="horizontal"
+        )
+        cb1.set_label("AvgLog₂ fold change (selected condition)")
+        st.pyplot(fig_cb)
 
 # ============================================================
-# COMBINED VOLCANO + ABUNDANCE PANEL
+# Volcano + Abundance Panel
 # ============================================================
 st.subheader("Conformation Volcano & Protein Abundance")
 
-# --- Volcano data ---
+# Volcano data
 x_all = prot_all[avg_col].astype(float)
 y_all = -np.log10(prot_all[pval_col].astype(float) + 1e-300)
 
@@ -281,12 +269,9 @@ fig, (ax_volc, ax_abun) = plt.subplots(1, 2, figsize=(10, 4))
 fig.tight_layout(pad=3.0)
 
 # Volcano background
-ax_volc.scatter(
-    x_all, y_all,
-    color="lightgrey", alpha=0.5, s=12
-)
+ax_volc.scatter(x_all, y_all, color="lightgrey", alpha=0.5, s=12)
 
-# Volcano significant points: hollow light blue circles
+# Significant (hollow light blue)
 if not peps.empty:
     x_sig = peps[avg_col].astype(float)
     y_sig = -np.log10(peps[pval_col].astype(float) + 1e-300)
@@ -294,10 +279,11 @@ if not peps.empty:
         x_sig, y_sig,
         facecolors="none",
         edgecolors="deepskyblue",
-        linewidths=1.5, s=40
+        linewidths=1.5,
+        s=40,
     )
 
-# Thresholds (dark grey dashed)
+# Threshold lines
 ax_volc.axvline(fc_cutoff, color="dimgray", linestyle="--", linewidth=1)
 ax_volc.axvline(-fc_cutoff, color="dimgray", linestyle="--", linewidth=1)
 ax_volc.axhline(-np.log10(p_cutoff), color="dimgray", linestyle="--", linewidth=1)
@@ -312,69 +298,57 @@ prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
 labels = ["Soluble", "Pellet", "Total"]
 suffix_map = {"Soluble": "soluble", "Pellet": "pellet", "Total": "total"}
 
-y_vals = []
-p_vals = []
-
-cond = selected_condition
+y_vals, p_vals = [], []
 
 for label in labels:
     suffix = suffix_map[label]
-    avg_col_abun = f"AvgLog₂({cond}).{suffix}"
-    pval_col_abun = f"AdjPval({cond}).{suffix}"
+    avg_col_abun = f"AvgLog₂({selected_condition}).{suffix}"
+    pval_col_abun = f"AdjPval({selected_condition}).{suffix}"
 
     if avg_col_abun in prot_abun.columns:
         y = float(prot_abun[avg_col_abun].values[0])
-        p = prot_abun[pval_col_abun].values[0] if pval_col_abun in prot_abun.columns else None
+        p = prot_abun[pval_col_abun].values[0]
     else:
-        y = np.nan
-        p = None
+        y, p = np.nan, None
 
     y_vals.append(y)
     p_vals.append(p)
 
 x_pos = np.arange(len(labels))
 
-# Outline-only bars
+# Outline bars
 ax_abun.bar(
     x_pos,
     np.nan_to_num(y_vals, nan=0.0),
     fill=False,
     edgecolor="black",
-    linewidth=1.5
+    linewidth=1.5,
 )
 
 ax_abun.set_xticks(x_pos)
 ax_abun.set_xticklabels(labels)
 ax_abun.set_ylabel("AvgLog₂")
 
-# Shared y-axis scale
+# Y-axis shared
 finite_vals = [v for v in y_vals if np.isfinite(v)]
 if finite_vals:
-    ymin = min(finite_vals)
-    ymax = max(finite_vals)
+    ymin, ymax = min(finite_vals), max(finite_vals)
     margin = 0.3 * (abs(ymax) + abs(ymin) + 0.1)
-    ax_abun.set_ylim(
-        min(0, ymin) - margin,
-        max(0, ymax) + margin
-    )
+    ax_abun.set_ylim(min(0, ymin) - margin, max(0, ymax) + margin)
 
-# AdjP labels
-for xpos, y, p in zip(x_pos, y_vals, p_vals):
-    if not np.isfinite(y) or p is None:
-        continue
-    ax_abun.text(
-        xpos,
-        y + (0.05 if y >= 0 else -0.05),
-        f"AdjP = {p:.3g}",
-        ha="center",
-        va="bottom" if y >= 0 else "top",
-        fontsize=9,
-    )
+# P-values
+for xpos, yv, pv in zip(x_pos, y_vals, p_vals):
+    if np.isfinite(yv) and pv is not None:
+        ax_abun.text(
+            xpos,
+            yv + (0.05 if yv >= 0 else -0.05),
+            f"AdjP = {pv:.3g}",
+            ha="center",
+            va="bottom" if yv >= 0 else "top"
+        )
 
 ax_abun.grid(alpha=0.2)
-
 st.pyplot(fig)
-
 
 # ============================================================
 # Peptide Table
