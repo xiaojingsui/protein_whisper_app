@@ -270,6 +270,7 @@ else:
             orientation="horizontal"
         )
         cb1.set_label("AvgLog₂ (fold change)")
+        st.pyplot(fig_cb, use_container_width=False)
         st.pyplot(fig_cb)
 
 # ============================================================
