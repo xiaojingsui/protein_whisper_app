@@ -272,34 +272,22 @@ else:
         cb1.set_label("AvgLog₂ (fold change)")
         st.pyplot(fig_cb)
 
-
 # ============================================================
+# Volcano + Abundance Panel
 # ============================================================
-# Volcano + Abundance Panel (Revised Layout)
-# ============================================================
-
 st.subheader("Volcano Plot (Conformation) & Protein Solubility and Total Abundance")
 
 # Volcano data
 x_all = prot_all[avg_col].astype(float)
 y_all = -np.log10(prot_all[pval_col].astype(float) + 1e-300)
 
-# Make the entire figure wide, but bar plot half-sized
-fig = plt.figure(figsize=(12, 4))
-gs = fig.add_gridspec(1, 2, width_ratios=[1, 0.5], wspace=0.35)
+fig, (ax_volc, ax_abun) = plt.subplots(1, 2, figsize=(10, 4))
+fig.tight_layout(pad=3.0)
 
-ax_volc = fig.add_subplot(gs[0, 0])
-ax_abun = fig.add_subplot(gs[0, 1])
+# Volcano background
+ax_volc.scatter(x_all, y_all, color="lightgrey", alpha=0.5, s=12)
 
-# --------------------------------------------
-# Volcano subplot
-# --------------------------------------------
-ax_volc.set_title("Protein Conformation", fontsize=14, fontweight="bold")
-
-# Background points
-ax_volc.scatter(x_all, y_all, color="lightgrey", alpha=0.5, s=18)
-
-# Significant hollow circles
+# Significant (hollow light blue)
 if not peps.empty:
     x_sig = peps[avg_col].astype(float)
     y_sig = -np.log10(peps[pval_col].astype(float) + 1e-300)
@@ -307,11 +295,11 @@ if not peps.empty:
         x_sig, y_sig,
         facecolors="none",
         edgecolors="black",
-        linewidths=1.3,
-        s=45,
+        linewidths=1.5,
+        s=40,
     )
 
-# Thresholds
+# Threshold lines
 ax_volc.axvline(fc_cutoff, color="dimgray", linestyle="--", linewidth=1)
 ax_volc.axvline(-fc_cutoff, color="dimgray", linestyle="--", linewidth=1)
 ax_volc.axhline(-np.log10(p_cutoff), color="dimgray", linestyle="--", linewidth=1)
@@ -320,54 +308,51 @@ ax_volc.set_xlabel(f"AvgLog₂({selected_condition})")
 ax_volc.set_ylabel("-log₁₀(AdjPval)")
 ax_volc.grid(alpha=0.25)
 
-# --------------------------------------------
-# Abundance subplot (Soluble / Pellet / Total)
-# --------------------------------------------
-ax_abun.set_title("Protein Solubility and Total Abundance", fontsize=14, fontweight="bold")
-
+# --- Abundance unified panel ---
 prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
 
 labels = ["Soluble", "Pellet", "Total"]
 suffix_map = {"Soluble": "soluble", "Pellet": "pellet", "Total": "total"}
 
 y_vals, p_vals = [], []
+
 for label in labels:
     suffix = suffix_map[label]
     avg_col_abun = f"AvgLog₂({selected_condition}).{suffix}"
     pval_col_abun = f"AdjPval({selected_condition}).{suffix}"
 
     if avg_col_abun in prot_abun.columns:
-        yv = float(prot_abun[avg_col_abun].values[0])
-        pv = prot_abun[pval_col_abun].values[0]
+        y = float(prot_abun[avg_col_abun].values[0])
+        p = prot_abun[pval_col_abun].values[0]
     else:
-        yv, pv = np.nan, None
+        y, p = np.nan, None
 
-    y_vals.append(yv)
-    p_vals.append(pv)
+    y_vals.append(y)
+    p_vals.append(p)
 
 x_pos = np.arange(len(labels))
 
-# Outline-only bars, white fill
+# Outline bars
 ax_abun.bar(
     x_pos,
-    np.nan_to_num(y_vals, nan=0),
+    np.nan_to_num(y_vals, nan=0.0),
     fill=False,
     edgecolor="black",
-    linewidth=1.5
+    linewidth=1.5,
 )
 
 ax_abun.set_xticks(x_pos)
-ax_abun.set_xticklabels(labels, fontsize=11)
-ax_abun.set_ylabel(f"AvgLog₂({selected_condition})", fontsize=11)
+ax_abun.set_xticklabels(labels)
+ax_abun.set_ylabel(f"AvgLog₂({selected_condition})")
 
-# Shared y-limit
+# Y-axis shared
 finite_vals = [v for v in y_vals if np.isfinite(v)]
 if finite_vals:
     ymin, ymax = min(finite_vals), max(finite_vals)
     margin = 0.3 * (abs(ymax) + abs(ymin) + 0.1)
     ax_abun.set_ylim(min(0, ymin) - margin, max(0, ymax) + margin)
 
-# Add AdjP labels
+# P-values
 for xpos, yv, pv in zip(x_pos, y_vals, p_vals):
     if np.isfinite(yv) and pv is not None:
         ax_abun.text(
@@ -375,14 +360,11 @@ for xpos, yv, pv in zip(x_pos, y_vals, p_vals):
             yv + (0.05 if yv >= 0 else -0.05),
             f"AdjP = {pv:.3g}",
             ha="center",
-            va="bottom" if yv >= 0 else "top",
-            fontsize=9,
+            va="bottom" if yv >= 0 else "top"
         )
 
 ax_abun.grid(alpha=0.2)
-
 st.pyplot(fig)
-
 
 # ============================================================
 # Peptide Table
