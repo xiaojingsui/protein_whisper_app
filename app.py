@@ -48,9 +48,11 @@ def load_abundance_table():
 
 abun_df = load_abundance_table()
 
+
 # ============================================================
-# Extract conformation-only conditions
+# Extract conformation-only conditions + custom biological order
 # ============================================================
+
 def extract_conditions(df):
     conds = []
     for col in df.columns:
@@ -59,7 +61,49 @@ def extract_conditions(df):
             conds.append(m.group(1))
     return sorted(set(conds))
 
-conditions = extract_conditions(df)
+
+def sort_conditions(conds):
+    # Define biological order groups
+    aging = [
+        "wt day6/wt day1",
+        "wt day9/wt day1",
+        "Q35/wt aging",
+    ]
+
+    heatshock = [
+        "wt heat-shock 35°C/wt 20°C",
+    ]
+
+    polyq = [
+        "Q35/Q24",
+        "Q40/Q24"       
+    ]
+
+    myosin = [
+        "myosin-ts 15°C/wt 15°C",
+        "myosin-ts 25°C/wt 25°C",
+    ]
+
+    paramyosin = [
+        "paramyosin-ts 15°C/wt 15°C",
+        "paramyosin-ts 25°C/wt 25°C",
+    ]
+
+    # Master ordered list
+    priority = aging + heatshock + polyq + myosin + paramyosin
+
+    # Keep those that exist
+    ordered = [c for c in priority if c in conds]
+
+    # Add remaining unknowns alphabetically
+    remaining = sorted(set(conds) - set(ordered))
+
+    return ordered + remaining
+
+
+conditions_raw = extract_conditions(df)
+conditions = sort_conditions(conditions_raw)
+
 
 # ============================================================
 # AlphaFold Downloader
