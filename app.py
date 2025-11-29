@@ -275,7 +275,7 @@ else:
 # ============================================================
 # Volcano + Abundance Panel
 # ============================================================
-st.subheader("Protein Conformation & Protein Solubility & Total Abundance")
+st.subheader("Protein Conformation & Solubility & Total Abundance")
 
 # Volcano data
 x_all = prot_all[avg_col].astype(float)
