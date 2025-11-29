@@ -4,6 +4,9 @@ import py3Dmol
 import requests
 import re
 import streamlit.components.v1 as components
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
 
 # ============================================================
@@ -13,7 +16,7 @@ import streamlit.components.v1 as components
 def load_table():
     df = pd.read_excel("Table_S1A.xlsx", header=3)
 
-    # Extract UniProt ID such as P02566
+    # Extract UniProt ID like P02566 from "sp|P02566|UNC-54_CAEEL"
     df["uniprot_id"] = (
         df["Protein ID"]
         .astype(str)
@@ -23,7 +26,12 @@ def load_table():
     )
 
     # Clean gene symbol
-    df["gene"] = df["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip()
+    df["gene"] = (
+        df["Gene symbol"]
+        .astype(str)
+        .str.replace("CELE_", "", regex=False)
+        .str.strip()
+    )
 
     return df
 
@@ -54,7 +62,6 @@ def download_structure(uniprot):
     uniprot = uniprot.strip().upper()
     headers = {"User-Agent": "Mozilla/5.0 (Streamlit App)"}
 
-    # Query metadata from AlphaFold API
     api_url = f"https://alphafold.ebi.ac.uk/api/prediction/{uniprot}"
     r = requests.get(api_url, headers=headers)
 
@@ -63,7 +70,7 @@ def download_structure(uniprot):
 
     try:
         data = r.json()
-    except:
+    except Exception:
         return None, None, None, "Invalid JSON from API"
 
     if len(data) == 0:
@@ -72,14 +79,14 @@ def download_structure(uniprot):
     model_url = None
     file_format = None
 
-    # Prefer PDB if available
+    # Prefer PDB if present
     for entry in data:
         if "modelUrl" in entry:
             model_url = entry["modelUrl"]
             file_format = "pdb"
             break
 
-    # Fall back to CIF
+    # Fallback to CIF
     if model_url is None:
         for entry in data:
             if "cifUrl" in entry:
@@ -88,9 +95,8 @@ def download_structure(uniprot):
                 break
 
     if model_url is None:
-        return None, None, None, "No PDB or CIF URL available"
+        return None, None, None, "No PDB or CIF URL in API response"
 
-    # Download actual structure file
     file_data = requests.get(model_url, headers=headers)
     if file_data.status_code != 200 or len(file_data.text) < 500:
         return None, model_url, file_format, "Failed to download structure file"
@@ -101,16 +107,34 @@ def download_structure(uniprot):
 # ============================================================
 # 3D Viewer
 # ============================================================
-def render_structure(structure_text, segments, file_format):
+def render_structure(structure_text, segments, file_format, plddt_coloring):
     view = py3Dmol.view(width=900, height=650)
     view.addModel(structure_text, file_format)
-    view.setStyle({"cartoon": {"color": "white", "opacity": 0.85}})
+
+    # Base coloring: either pLDDT (B-factor) or neutral white
+    if plddt_coloring:
+        # AlphaFold-style B-factor gradient
+        view.setStyle(
+            {
+                "cartoon": {
+                    "colorscheme": {
+                        "prop": "b",
+                        "gradient": "linear",
+                        "min": 50,
+                        "max": 100,
+                        "colors": ["orange", "yellow", "cyan", "blue"],
+                    }
+                }
+            }
+        )
+    else:
+        view.setStyle({"cartoon": {"color": "white", "opacity": 0.85}})
 
     # Highlight peptide segments
     for seg in segments:
         view.addStyle(
             {"resi": list(range(seg["start"], seg["end"] + 1))},
-            {"cartoon": {"color": seg["color"], "opacity": 1.0}}
+            {"cartoon": {"color": seg["color"], "opacity": 1.0}},
         )
 
     view.zoomTo()
@@ -124,10 +148,7 @@ st.sidebar.header("Protein Search")
 
 query = st.sidebar.text_input("Search gene or UniProt ID:", "")
 
-selected_condition = st.sidebar.selectbox(
-    "Select condition:",
-    conditions,
-)
+selected_condition = st.sidebar.selectbox("Select condition:", conditions)
 
 fc_cutoff = st.sidebar.number_input(
     "Fold-change cutoff (|AvgLog₂|):",
@@ -145,6 +166,15 @@ p_cutoff = st.sidebar.number_input(
     step=0.01,
 )
 
+color_mode = st.sidebar.selectbox(
+    "Peptide color mode:",
+    ["Peptide type (magenta/teal)", "Fold-change heatmap"],
+)
+
+plddt_coloring = st.sidebar.checkbox(
+    "Color backbone by pLDDT (AlphaFold confidence)", value=False
+)
+
 
 # ============================================================
 # Main UI
@@ -155,7 +185,7 @@ if not query:
     st.info("Enter a gene name or UniProt ID to begin.")
     st.stop()
 
-# Find protein match
+# Match protein
 hits = df[
     df["uniprot_id"].str.contains(query, case=False, na=False)
     | df["gene"].str.contains(query, case=False, na=False)
@@ -182,31 +212,55 @@ if avg_col not in df.columns or pval_col not in df.columns:
     st.error("Condition does not exist in the dataset.")
     st.stop()
 
-# Filter peptides
-peps = df[df["uniprot_id"] == uniprot].copy()
-peps = peps[(peps[avg_col].abs() >= fc_cutoff) & (peps[pval_col] <= p_cutoff)]
+# All peptides for this protein (for volcano)
+prot_all = df[df["uniprot_id"] == uniprot].copy()
+
+# Significant peptides for highlighting
+peps = prot_all[
+    (prot_all[avg_col].abs() >= fc_cutoff) & (prot_all[pval_col] <= p_cutoff)
+].copy()
 
 if peps.empty:
     st.warning("No peptides meet the filter criteria.")
 else:
     st.success(f"{len(peps)} peptides passed the filters.")
 
-# Convert to segment list
+
+# ============================================================
+# Build segments with colors
+# ============================================================
 segments = []
-for _, row in peps.iterrows():
-    start = row["Start position"]
-    end = row["End position"]
 
-    if pd.isna(start) or pd.isna(end):
-        continue
+if not peps.empty:
+    if color_mode == "Fold-change heatmap":
+        # Diverging color map centered at 0 (blue → white → red)
+        fc_vals = peps[avg_col].astype(float)
+        fc_max = float(fc_vals.abs().max())
+        if fc_max == 0:
+            fc_max = 1.0
+        norm = mcolors.TwoSlopeNorm(vmin=-fc_max, vcenter=0.0, vmax=fc_max)
+        cmap = plt.get_cmap("coolwarm")
 
-    color = "magenta" if row["Peptide type"] == "full" else "teal"
+    for _, row in peps.iterrows():
+        start = row["Start position"]
+        end = row["End position"]
+        if pd.isna(start) or pd.isna(end):
+            continue
 
-    segments.append({
-        "start": int(start),
-        "end": int(end),
-        "color": color,
-    })
+        if color_mode == "Peptide type (magenta/teal)":
+            color = "magenta" if row["Peptide type"] == "full" else "teal"
+        else:
+            fc = float(row[avg_col])
+            rgba = cmap(norm(fc))
+            color = mcolors.to_hex(rgba)
+
+        segments.append(
+            {
+                "start": int(start),
+                "end": int(end),
+                "color": color,
+            }
+        )
 
 
 # ============================================================
@@ -220,15 +274,45 @@ if structure_text is None:
     st.error(f"No AlphaFold structure available for **{uniprot}**.")
     if error_msg:
         st.warning(f"Reason: {error_msg}")
-    st.info("Showing peptide table only.")
+    st.info("Showing peptide table and volcano plot only.")
 else:
     st.write(f"Using AlphaFold model: {model_url}")
 
-    viewer = render_structure(structure_text, segments, file_format)
-
-    # Convert py3Dmol to HTML for Streamlit
+    viewer = render_structure(structure_text, segments, file_format, plddt_coloring)
     html = viewer._make_html()
     components.html(html, height=650, scrolling=True)
+
+
+# ============================================================
+# Volcano Plot for Selected Condition
+# ============================================================
+st.subheader("Volcano Plot for Selected Condition")
+
+x_all = prot_all[avg_col].astype(float)
+y_all = -np.log10(prot_all[pval_col].astype(float) + 1e-300)
+
+fig, ax = plt.subplots(figsize=(6, 4))
+
+# All peptides (light grey)
+ax.scatter(x_all, y_all, s=8, alpha=0.3, color="lightgrey", label="All peptides")
+
+# Highlight significant peptides (those on the structure)
+if not peps.empty:
+    x_sig = peps[avg_col].astype(float)
+    y_sig = -np.log10(peps[pval_col].astype(float) + 1e-300)
+    ax.scatter(x_sig, y_sig, s=25, alpha=0.9, color="black", label="Highlighted")
+
+# Threshold lines
+ax.axvline(fc_cutoff, color="red", linestyle="--", linewidth=1)
+ax.axvline(-fc_cutoff, color="red", linestyle="--", linewidth=1)
+ax.axhline(-np.log10(p_cutoff + 1e-300), color="blue", linestyle="--", linewidth=1)
+
+ax.set_xlabel(f"AvgLog₂({selected_condition})")
+ax.set_ylabel("-log₁₀(AdjPval)")
+ax.legend(loc="best", fontsize=8)
+ax.grid(alpha=0.2)
+
+st.pyplot(fig)
 
 
 # ============================================================
@@ -236,5 +320,13 @@ else:
 # ============================================================
 st.subheader("Peptides Used for Highlighting")
 st.dataframe(
-    peps[["Peptide sequence", "Start position", "End position", avg_col, pval_col]]
+    peps[
+        [
+            "Peptide sequence",
+            "Start position",
+            "End position",
+            avg_col,
+            pval_col,
+        ]
+    ]
 )
