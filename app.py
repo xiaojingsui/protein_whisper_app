@@ -166,7 +166,7 @@ plddt_coloring = st.sidebar.checkbox(
 # ============================================================
 # MAIN UI
 # ============================================================
-st.title("🧬 Protein Whisper – Structure Viewer")
+st.title("Protein Whisper – Structure Viewer")
 
 if not query:
     st.info("Enter a gene or UniProt ID.")
@@ -251,9 +251,9 @@ else:
         st.markdown(
             f"""
             <div style="text-align:center; font-size:16px;">
-                <span style="color:{full_color};">● Full peptide</span>
+                <span style="color:{full_color};">● Fully-tryptic peptide</span>
                 &nbsp;&nbsp;&nbsp;&nbsp;
-                <span style="color:{half_color};">● Half peptide</span>
+                <span style="color:{half_color};">● Semi-tryptic peptide</span>
             </div>
             """,
             unsafe_allow_html=True,
@@ -262,20 +262,20 @@ else:
     # Colorbar for fold-change mode
     if color_mode == "Fold-change heatmap":
         st.markdown("**Fold-change color scale:**")
-        fig_cb, ax_cb = plt.subplots(figsize=(6, 0.5))
+        fig_cb, ax_cb = plt.subplots(figsize=(3, 0.25))
 
         cb1 = plt.colorbar(
             plt.cm.ScalarMappable(norm=norm, cmap=cmap),
             cax=ax_cb,
             orientation="horizontal"
         )
-        cb1.set_label("AvgLog₂ fold change (selected condition)")
+        cb1.set_label("AvgLog₂ (fold change)")
         st.pyplot(fig_cb)
 
 # ============================================================
 # Volcano + Abundance Panel
 # ============================================================
-st.subheader("Conformation Volcano & Protein Abundance")
+st.subheader("Volcano Plot (Conformation) & Protein Solubility and Total Abundance")
 
 # Volcano data
 x_all = prot_all[avg_col].astype(float)
@@ -294,7 +294,7 @@ if not peps.empty:
     ax_volc.scatter(
         x_sig, y_sig,
         facecolors="none",
-        edgecolors="deepskyblue",
+        edgecolors="black",
         linewidths=1.5,
         s=40,
     )
@@ -343,7 +343,7 @@ ax_abun.bar(
 
 ax_abun.set_xticks(x_pos)
 ax_abun.set_xticklabels(labels)
-ax_abun.set_ylabel("AvgLog₂")
+ax_abun.set_ylabel(f"AvgLog₂({selected_condition})")
 
 # Y-axis shared
 finite_vals = [v for v in y_vals if np.isfinite(v)]
