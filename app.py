@@ -1,77 +1,170 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import numpy as np
+import py3Dmol
+import requests
+import re
 
-# ----------------------------
-# Settings
-# ----------------------------
-EXCEL_FILE = "Table_S1A.xlsx"
-PEP_SHEET = "Peptide-level data"
-HEADER_ROW = 3   # Data starts at row 4
-
-st.set_page_config(page_title="Protein Whisper – Peptide Explorer", layout="wide")
-
+# ============================================================
+# Load peptide table
+# ============================================================
 @st.cache_data
-def load_peptide_data():
-    df_pep = pd.read_excel(EXCEL_FILE, sheet_name=PEP_SHEET, header=HEADER_ROW)
-    return df_pep
+def load_table():
+    df = pd.read_excel("Table_S1A.xlsx", header=3)
+    df["uniprot_id"] = df["Protein ID"].str.split("|").str[1]
+    df["gene"] = df["Gene symbol"].str.replace("CELE_", "", regex=False)
+    return df
 
-# ----------------------------
-# Load data
-# ----------------------------
-df = load_peptide_data()
+df = load_table()
 
-st.title("🔬 Protein Whisper – Peptide-level Explorer")
-st.write("Interactive exploration of **peptide-level conformation data** from your Table S1A dataset.")
+# ============================================================
+# Extract available experimental conditions
+# ============================================================
+def extract_conditions(df):
+    conds = []
+    for col in df.columns:
+        m = re.match(r"AvgLog₂\((.+)\)\.conformation", col)
+        if m:
+            conds.append(m.group(1))
+    return sorted(conds)
 
-# ----------------------------
-# Sidebar search
-# ----------------------------
-st.sidebar.header("🔍 Search peptides/proteins")
+conditions = extract_conditions(df)
 
-search_gene = st.sidebar.text_input("Gene symbol contains:")
-search_peptide = st.sidebar.text_input("Peptide sequence contains:")
+# ============================================================
+# Download AlphaFold PDB on the fly
+# ============================================================
+@st.cache_data(show_spinner=True)
+def download_pdb(uniprot):
+    """
+    Fetch PDB structure from AlphaFold DB dynamically.
+    Works on Streamlit Cloud.
+    """
+    url = f"https://alphafold.ebi.ac.uk/files/AF-{uniprot}-F1-model_v4.pdb"
+    r = requests.get(url)
+    if r.status_code != 200:
+        raise ValueError(f"Could not download PDB for {uniprot}")
+    return r.text
 
-df_filtered = df.copy()
+# ============================================================
+# 3D Viewer
+# ============================================================
+def render_structure(pdb_data, segments):
+    view = py3Dmol.view(width=800, height=600)
+    view.addModel(pdb_data, "pdb")
+    view.setStyle({"cartoon": {"color": "white", "opacity": 0.85}})
 
-if search_gene:
-    df_filtered = df_filtered[df_filtered["Gene symbol"].astype(str).str.contains(search_gene, case=False)]
-
-if search_peptide:
-    df_filtered = df_filtered[df_filtered["Peptide sequence"].astype(str).str.contains(search_peptide, case=False)]
-
-st.write(f"### Showing {len(df_filtered)} peptides")
-
-st.dataframe(df_filtered, use_container_width=True)
-
-# ----------------------------
-# Volcano plot (optional)
-# ----------------------------
-st.write("---")
-st.write("## 🧨 Volcano Plot (Choose condition)")
-
-# Detect available conformation columns
-conformation_cols = [c for c in df.columns if "conformation" in c and "AvgLog₂" in c]
-
-if conformation_cols:
-    selected_cond = st.selectbox("Select comparison:", conformation_cols)
-
-    # Corresponding p-values
-    pval_col = selected_cond.replace("AvgLog₂", "Pval")
-
-    if pval_col in df.columns:
-        df_volcano = df[[selected_cond, pval_col, "Gene symbol", "Peptide sequence"]].dropna()
-
-        fig = px.scatter(
-            df_volcano,
-            x=selected_cond,
-            y=-df_volcano[pval_col].apply(lambda p: np.log10(p) * -1),
-            hover_data=["Gene symbol", "Peptide sequence"],
-            title=f"Volcano plot: {selected_cond}"
+    for seg in segments:
+        view.addStyle(
+            {"resi": list(range(seg["start"], seg["end"] + 1))},
+            {"cartoon": {"color": seg["color"], "opacity": 1.0}}
         )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("No p-value column found for this comparison.")
-else:
-    st.info("No conformation columns found in peptide sheet.")
+    view.zoomTo()
+    return view
+
+# ============================================================
+# Sidebar UI
+# ============================================================
+st.sidebar.header("Protein Search")
+
+query = st.sidebar.text_input("Gene name / UniProt ID:", "")
+
+selected_condition = st.sidebar.selectbox(
+    "Condition to visualize:",
+    conditions
+)
+
+fc_cut = st.sidebar.number_input(
+    "Fold-change cutoff (|AvgLog₂|):",
+    min_value=0.0, max_value=10.0, value=1.0, step=0.1
+)
+
+p_cut = st.sidebar.number_input(
+    "AdjPval cutoff:",
+    min_value=0.0, max_value=1.0, value=0.05, step=0.01
+)
+
+# ============================================================
+# Main view
+# ============================================================
+st.title("Protein Whisper – Structure Viewer")
+
+if not query:
+    st.info("Search a protein to begin.")
+    st.stop()
+
+# ============================================================
+# Find protein match
+# ============================================================
+hits = df[
+    (df["uniprot_id"].str.contains(query, case=False, na=False)) |
+    (df["gene"].str.contains(query, case=False, na=False))
+]
+
+if hits.empty:
+    st.error("No matching protein found.")
+    st.stop()
+
+protein = hits.iloc[0]
+uniprot = protein["uniprot_id"]
+gene = protein["gene"]
+
+st.subheader(f"Protein: **{gene}** ({uniprot})")
+
+# ============================================================
+# Condition column names
+# ============================================================
+avg_col = f"AvgLog₂({selected_condition}).conformation"
+pval_col = f"AdjPval({selected_condition}).conformation"
+
+if avg_col not in df.columns or pval_col not in df.columns:
+    st.error("Selected condition not found in dataset.")
+    st.stop()
+
+# ============================================================
+# Extract significant peptides for this protein
+# ============================================================
+sub = df[df["uniprot_id"] == uniprot].copy()
+
+sub = sub[
+    (sub[avg_col].abs() >= fc_cut) &
+    (sub[pval_col] <= p_cut)
+]
+
+if sub.empty:
+    st.warning("No peptides meet filter criteria.")
+    st.stop()
+
+# Create segment list
+segments = []
+for _, row in sub.iterrows():
+    if pd.isna(row["Start position"]) or pd.isna(row["End position"]):
+        continue
+
+    color = "magenta" if row["Peptide type"] == "full" else "teal"
+
+    segments.append({
+        "start": int(row["Start position"]),
+        "end": int(row["End position"]),
+        "color": color
+    })
+
+# ============================================================
+# Download AlphaFold structure
+# ============================================================
+with st.spinner("Downloading AlphaFold structure..."):
+    pdb_data = download_pdb(uniprot)
+
+# ============================================================
+# Show 3D structure
+# ============================================================
+st.subheader(f"Structure Highlighted by Condition: {selected_condition}")
+
+viewer = render_structure(pdb_data, segments)
+viewer.show()
+
+# ============================================================
+# Show peptide table
+# ============================================================
+st.subheader("Highlighted Peptides")
+st.dataframe(
+    sub[["Peptide sequence", "Start position", "End position", avg_col, pval_col]]
+)
