@@ -146,7 +146,7 @@ def render_structure(structure_text, segments, file_format, plddt_coloring):
 st.sidebar.header("Protein Search")
 
 query = st.sidebar.text_input("Search gene or UniProt ID:", "")
-selected_condition = st.sidebar.selectbox("Conformation condition:", conditions)
+selected_condition = st.sidebar.selectbox("Stress condition:", conditions)
 
 fc_cutoff = st.sidebar.number_input(
     "Fold-change cutoff (|AvgLog₂|):", value=1.0, min_value=0.0, max_value=10.0, step=0.1)
