@@ -275,7 +275,7 @@ else:
 # ============================================================
 # Volcano + Abundance Panel
 # ============================================================
-st.subheader("Volcano Plot (Conformation) & Protein Solubility and Total Abundance")
+st.subheader("Protein Conformation & Protein Solubility & Total Abundance")
 
 # Volcano data
 x_all = prot_all[avg_col].astype(float)
@@ -285,6 +285,7 @@ fig, (ax_volc, ax_abun) = plt.subplots(1, 2, figsize=(10, 4))
 fig.tight_layout(pad=3.0)
 
 # Volcano background
+ax_volc.set_title("Protein Conformation", fontsize=14, fontweight="bold")
 ax_volc.scatter(x_all, y_all, color="lightgrey", alpha=0.5, s=12)
 
 # Significant (hollow light blue)
@@ -309,6 +310,7 @@ ax_volc.set_ylabel("-log₁₀(AdjPval)")
 ax_volc.grid(alpha=0.25)
 
 # --- Abundance unified panel ---
+
 prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
 
 labels = ["Soluble", "Pellet", "Total"]
@@ -333,6 +335,8 @@ for label in labels:
 x_pos = np.arange(len(labels))
 
 # Outline bars
+ax_abun.set_title("Protein Solubility and Total Abundance", fontsize=12, fontweight="bold")
+
 ax_abun.bar(
     x_pos,
     np.nan_to_num(y_vals, nan=0.0),
