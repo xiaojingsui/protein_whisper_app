@@ -14,9 +14,17 @@ import matplotlib.colors as mcolors
 @st.cache_data
 def load_table():
     df = pd.read_excel("Table_S1A.xlsx", header=3)
-    df["uniprot_id"] = df["Protein ID"].astype(str).split("|").str[1].str.strip()
-    df["gene"] = df["Gene symbol"].astype(str).replace("CELE_", "", regex=False).str.strip()
+
+    df["uniprot_id"] = (
+        df["Protein ID"].astype(str).str.split("|").str[1].str.strip()
+    )
+
+    df["gene"] = (
+        df["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip()
+    )
+
     return df
+
 
 df = load_table()
 
@@ -26,9 +34,17 @@ df = load_table()
 @st.cache_data
 def load_abundance_table():
     df2 = pd.read_excel("Table_S1A.xlsx", sheet_name="Protein-level data", header=3)
-    df2["uniprot_id"] = df2["Protein ID"].astype(str).split("|").str[1].str.strip()
-    df2["gene"] = df2["Gene symbol"].astype(str).replace("CELE_", "", regex=False).str.strip()
+
+    df2["uniprot_id"] = (
+        df2["Protein ID"].astype(str).str.split("|").str[1].str.strip()
+    )
+
+    df2["gene"] = (
+        df2["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip()
+    )
+
     return df2
+
 
 abun_df = load_abundance_table()
 
