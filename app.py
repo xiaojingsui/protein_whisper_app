@@ -341,6 +341,7 @@ ax_abun.set_title("Protein Solubility & Total Abundance", fontsize=14, fontweigh
 ax_abun.bar(
     x_pos,
     np.nan_to_num(y_vals, nan=0.0),
+    width=0.66,
     fill=False,
     edgecolor="black",
     linewidth=1.5,
