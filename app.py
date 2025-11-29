@@ -101,11 +101,11 @@ def download_structure(uniprot):
                 break
 
     if model_url is None:
-        return None, None, None, "No modelUrl or cifUrl available"
+        return None, None, None, "No modelUrl or cifUrl found"
 
     res = requests.get(model_url, headers=headers)
     if res.status_code != 200 or len(res.text) < 500:
-        return None, model_url, file_format, "Failed to download structure file"
+        return None, model_url, file_format, "Failed to download structure"
 
     return res.text, model_url, file_format, None
 
@@ -217,7 +217,7 @@ peps = prot_all[
 ]
 
 if peps.empty:
-    st.warning("No peptides meet conformation FC/Pval filtering.")
+    st.warning("No peptides meet conformation FC/Pval filters.")
 else:
     st.success(f"{len(peps)} peptides highlighted on the structure.")
 
@@ -269,93 +269,111 @@ else:
 
 
 # ============================================================
-# Volcano Plot (Conformation Only)
+# COMBINED VOLCANO + ABUNDANCE PANEL
 # ============================================================
-st.subheader("Volcano Plot (Conformation)")
+st.subheader("Conformation Volcano & Protein Abundance")
 
+# --- Volcano data ---
 x_all = prot_all[avg_col].astype(float)
 y_all = -np.log10(prot_all[pval_col].astype(float) + 1e-300)
 
-fig, ax = plt.subplots(figsize=(6, 4))
-ax.scatter(x_all, y_all, color="lightgrey", alpha=0.5, s=12)
+fig, (ax_volc, ax_abun) = plt.subplots(1, 2, figsize=(10, 4))
+fig.tight_layout(pad=3.0)
 
+# Volcano background
+ax_volc.scatter(
+    x_all, y_all,
+    color="lightgrey", alpha=0.5, s=12
+)
+
+# Volcano significant points: hollow light blue circles
 if not peps.empty:
-    ax.scatter(
-        peps[avg_col].astype(float),
-        -np.log10(peps[pval_col].astype(float) + 1e-300),
-        color="black",
-        s=30
+    x_sig = peps[avg_col].astype(float)
+    y_sig = -np.log10(peps[pval_col].astype(float) + 1e-300)
+    ax_volc.scatter(
+        x_sig, y_sig,
+        facecolors="none",
+        edgecolors="deepskyblue",
+        linewidths=1.5, s=40
     )
 
-ax.axvline(fc_cutoff, color="red", linestyle="--")
-ax.axvline(-fc_cutoff, color="red", linestyle="--")
-ax.axhline(-np.log10(p_cutoff), color="blue", linestyle="--")
+# Thresholds (dark grey dashed)
+ax_volc.axvline(fc_cutoff, color="dimgray", linestyle="--", linewidth=1)
+ax_volc.axvline(-fc_cutoff, color="dimgray", linestyle="--", linewidth=1)
+ax_volc.axhline(-np.log10(p_cutoff), color="dimgray", linestyle="--", linewidth=1)
 
-ax.set_xlabel(f"AvgLog₂({selected_condition})")
-ax.set_ylabel("-log10(AdjPval)")
-ax.grid(alpha=0.25)
+ax_volc.set_xlabel(f"AvgLog₂({selected_condition})")
+ax_volc.set_ylabel("-log₁₀(AdjPval)")
+ax_volc.grid(alpha=0.25)
 
-st.pyplot(fig)
-
-
-# ============================================================
-# Abundance Plots (Soluble / Pellet / Total)
-# ============================================================
-st.subheader("Protein Abundance (Soluble / Pellet / Total)")
-
+# --- Abundance unified panel ---
 prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
 
-# Metric suffixes
-abundance_metrics = {
-    "Soluble": "soluble",
-    "Pellet": "pellet",
-    "Total": "total",
-}
+labels = ["Soluble", "Pellet", "Total"]
+suffix_map = {"Soluble": "soluble", "Pellet": "pellet", "Total": "total"}
 
-fig3, axs = plt.subplots(1, 3, figsize=(9, 3))
-fig3.tight_layout(pad=3.0)
+y_vals = []
+p_vals = []
 
 cond = selected_condition
 
-for i, (label, suffix) in enumerate(abundance_metrics.items()):
-    ax = axs[i]
-
+for label in labels:
+    suffix = suffix_map[label]
     avg_col_abun = f"AvgLog₂({cond}).{suffix}"
     pval_col_abun = f"AdjPval({cond}).{suffix}"
 
-    if avg_col_abun not in prot_abun.columns:
-        ax.set_title(label)
-        ax.text(0.5, 0.5, "No data", ha="center", va="center")
-        ax.set_xticks([])
-        ax.set_yticks([])
-        continue
+    if avg_col_abun in prot_abun.columns:
+        y = float(prot_abun[avg_col_abun].values[0])
+        p = prot_abun[pval_col_abun].values[0] if pval_col_abun in prot_abun.columns else None
+    else:
+        y = np.nan
+        p = None
 
-    yval = float(prot_abun[avg_col_abun].values[0])
-    pval = prot_abun[pval_col_abun].values[0] if pval_col_abun in prot_abun.columns else None
+    y_vals.append(y)
+    p_vals.append(p)
 
-    ax.bar([label], [yval], color="#4e79a7")
-    ax.set_title(label, fontsize=10)
+x_pos = np.arange(len(labels))
 
-    if i == 0:
-        ax.set_ylabel("AvgLog₂")
+# Outline-only bars
+ax_abun.bar(
+    x_pos,
+    np.nan_to_num(y_vals, nan=0.0),
+    fill=False,
+    edgecolor="black",
+    linewidth=1.5
+)
 
-    if pval is not None:
-        ax.text(
-            0,
-            yval + (0.05 if yval >= 0 else -0.05),
-            f"AdjP = {pval:.3g}",
-            ha="center",
-            va="bottom" if yval >= 0 else "top",
-            fontsize=9
-        )
+ax_abun.set_xticks(x_pos)
+ax_abun.set_xticklabels(labels)
+ax_abun.set_ylabel("AvgLog₂")
 
-    ax.grid(alpha=0.2)
-    ax.set_ylim(
-        min(0, yval) - abs(yval) * 0.3 - 0.1,
-        max(0, yval) + abs(yval) * 0.3 + 0.1
+# Shared y-axis scale
+finite_vals = [v for v in y_vals if np.isfinite(v)]
+if finite_vals:
+    ymin = min(finite_vals)
+    ymax = max(finite_vals)
+    margin = 0.3 * (abs(ymax) + abs(ymin) + 0.1)
+    ax_abun.set_ylim(
+        min(0, ymin) - margin,
+        max(0, ymax) + margin
     )
 
-st.pyplot(fig3)
+# AdjP labels
+for xpos, y, p in zip(x_pos, y_vals, p_vals):
+    if not np.isfinite(y) or p is None:
+        continue
+    ax_abun.text(
+        xpos,
+        y + (0.05 if y >= 0 else -0.05),
+        f"AdjP = {p:.3g}",
+        ha="center",
+        va="bottom" if y >= 0 else "top",
+        fontsize=9,
+    )
+
+ax_abun.grid(alpha=0.2)
+
+st.pyplot(fig)
 
 
 # ============================================================
