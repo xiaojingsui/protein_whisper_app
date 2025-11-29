@@ -286,7 +286,7 @@ fig.subplots_adjust(wspace=0.6)
 fig.tight_layout(pad=3.0)
 
 # Volcano background
-ax_volc.set_title("Protein Conformation", fontsize=14, fontweight="bold")
+ax_volc.set_title("Protein Conformation (Peptides)", fontsize=14, fontweight="bold")
 ax_volc.scatter(x_all, y_all, color="lightgrey", alpha=0.5, s=12)
 
 # Significant (hollow light blue)
