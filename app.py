@@ -262,14 +262,14 @@ else:
     # Colorbar for fold-change mode
     if color_mode == "Fold-change heatmap":
         st.markdown("**Fold-change color scale:**")
-        fig_cb, ax_cb = plt.subplots(figsize=(3, 0.25))
+        fig_cb, ax_cb = plt.subplots(figsize=(1.5, 0.1))
 
         cb1 = plt.colorbar(
             plt.cm.ScalarMappable(norm=norm, cmap=cmap),
             cax=ax_cb,
             orientation="horizontal"
         )
-        cb1.set_label("AvgLog₂ (fold change)")
+        cb1.set_label("AvgLog₂ (fold change)", fontsize=8)
         st.pyplot(fig_cb, use_container_width=False)
         
 
