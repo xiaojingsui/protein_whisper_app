@@ -356,7 +356,7 @@ if finite_vals:
     ymin, ymax = min(finite_vals), max(finite_vals)
     margin = 0.3 * (abs(ymax) + abs(ymin) + 0.1)
     ax_abun.set_ylim(min(0, ymin) - margin, max(0, ymax) + margin)
-
+ax_abun.axhline(0, color="dimgray", linestyle="--", linewidth=1)
 # P-values
 for xpos, yv, pv in zip(x_pos, y_vals, p_vals):
     if np.isfinite(yv) and pv is not None:
