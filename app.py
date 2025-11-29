@@ -227,9 +227,10 @@ if hits.empty:
 
 protein = hits.iloc[0]
 uniprot = protein["uniprot_id"]
+protein_name = protein["Description"].split("OS=")[0].strip()
 gene = protein["gene"]
 
-st.subheader(f"Protein: **{gene}** ({uniprot})")
+st.subheader(f"Protein: {gene} ({uniprot}) — {protein_name}")
 
 # ============================================================
 # Conformation Filtering
