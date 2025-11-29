@@ -335,7 +335,7 @@ for label in labels:
 x_pos = np.arange(len(labels))
 
 # Outline bars
-ax_abun.set_title("Protein Solubility and Total Abundance", fontsize=12, fontweight="bold")
+ax_abun.set_title("Protein Solubility & Total Abundance", fontsize=14, fontweight="bold")
 
 ax_abun.bar(
     x_pos,
