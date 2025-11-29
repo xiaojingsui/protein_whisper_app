@@ -269,7 +269,7 @@ else:
             cax=ax_cb,
             orientation="horizontal"
         )
-        cb1.set_label("AvgLog₂ (fold change)", fontsize=6)
+        cb1.set_label(f"AvgLog₂({selected_condition})", fontsize=6)
         cb1.ax.tick_params(labelsize=6)  
         st.pyplot(fig_cb, use_container_width=False)
         
