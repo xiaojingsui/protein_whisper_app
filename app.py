@@ -244,7 +244,7 @@ if not query:
 
         <div class="hint-container">
             <div class="blink-arrow">⬅</div>
-            <div class="start-text">Start here</div>
+            <div class="start-text">This way, please :)</div>
         </div>
         """,
         unsafe_allow_html=True,
