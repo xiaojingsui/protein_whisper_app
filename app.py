@@ -213,6 +213,24 @@ plddt_coloring = st.sidebar.checkbox(
 st.title("Protein Whisper – Structure Viewer")
 
 if not query:
+
+    # --- Pink info box styling ---
+    st.markdown(
+        """
+        <style>
+        .stAlert {
+            background-color: #ffe6f2 !important;   /* soft pink background */
+            border: 1px solid #ffb3d9 !important;   /* slightly darker pink border */
+        }
+        .stAlert p {
+            color: #b30059 !important;              /* dark rose text color */
+            font-weight: 500;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    
     st.info("Type a gene name or UniProt ID in the search box to explore a protein — for example: unc-54.")
 
     st.markdown(
