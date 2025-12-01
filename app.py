@@ -223,27 +223,35 @@ if not query:
             50% { opacity: 0; }
             100% { opacity: 1; }
         }
+        .hint-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
         .blink-arrow {
             font-size: 22px;
-            color: #2F80ED;
+            color: skyblue;
             font-weight: bold;
             animation: blink 1s infinite;
+            margin-right: 8px;
         }
         .start-text {
             font-size: 18px;
             font-weight: 600;
-            color: #2F80ED;
-            margin-left: 8px;
+            color: skyblue;
         }
         </style>
 
-        <div class="blink-arrow">⬅</div>
-        <div class="start-text">Start here</div>
+        <div class="hint-container">
+            <div class="blink-arrow">⬅</div>
+            <div class="start-text">Start here</div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
 
     st.stop()
+
 
 
 hits = df[
