@@ -214,6 +214,26 @@ st.title("Protein Whisper – Structure Viewer")
 
 if not query:
 
+    st.markdown(
+    """
+    <style>
+    /* Change background + border of Streamlit alert boxes (info, warning, etc.) */
+    .stAlert {
+        background-color: #e0faff !important;   /* very light aqua background */
+        border: 1px solid #19CFE2 !important;   /* bright aqua border */
+        border-radius: 8px;
+    }
+
+    /* Change text color inside info box */
+    .stAlert p {
+        color: #0b7d8a !important;              /* darker aqua text for readability */
+        font-weight: 500;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+    )
+
 
     st.info("Type a gene name or UniProt ID in the search box to explore a protein. For example: unc-54.")
 
