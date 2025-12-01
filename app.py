@@ -235,7 +235,7 @@ if not query:
     )
 
 
-    st.info("Type a C. elegans gene name or UniProt ID in the search box to explore a protein.<br>Try unc-54.", unsafe_allow_html=True)
+    st.info("Type a C. elegans gene name or UniProt ID in the search box to explore a protein. Try unc-54.")
 
 
     st.markdown(
