@@ -213,7 +213,7 @@ plddt_coloring = st.sidebar.checkbox(
 st.title("Protein Whisper – Structure Viewer")
 
 if not query:
-    st.info("Type a gene name or UniProt ID in the search box to explore a protein — for example: unc-54.")
+    st.markdown("Type a gene name or UniProt ID in the search box to explore a protein — for example: unc-54.")
     st.markdown("<span style='color:#4A90E2;'>⬅ Start here</span>", unsafe_allow_html=True)
     st.stop()
 
