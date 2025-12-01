@@ -213,7 +213,7 @@ plddt_coloring = st.sidebar.checkbox(
 st.title("Protein Whisper – Structure Viewer")
 
 if not query:
-    st.info("Enter a gene or UniProt ID.")
+    st.info("Start by entering a gene name or UniProt ID on the left. Try something like unc-54!")
     st.stop()
 
 hits = df[
