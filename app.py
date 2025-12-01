@@ -229,14 +229,14 @@ if not query:
             margin-top: 10px;
         }
         .blink-arrow {
-            font-size: 22px;
+            font-size: 38px;
             color: skyblue;
             font-weight: bold;
             animation: blink 1s infinite;
             margin-right: 8px;
         }
         .start-text {
-            font-size: 18px;
+            font-size: 30px;
             font-weight: 600;
             color: skyblue;
         }
