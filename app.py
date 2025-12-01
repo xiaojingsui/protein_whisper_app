@@ -214,8 +214,8 @@ st.title("Protein Whisper – Structure Viewer")
 
 if not query:
 
-    
-    st.info("Type a gene name or UniProt ID in the search box to explore a protein — for example: unc-54.")
+
+    st.info("Type a gene name or UniProt ID in the search box to explore a protein. For example: unc-54.")
 
     st.markdown(
         """
