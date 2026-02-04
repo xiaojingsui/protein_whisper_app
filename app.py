@@ -54,7 +54,7 @@ st.markdown("""
     /* --- 4. CUSTOM NAVBAR --- */
     div[role="radiogroup"] {
         position: fixed !important;        
-        top: 0 !important;                
+        top: 0 !important;                 
         left: 0 !important;               
         width: 100vw !important;            
         z-index: 1000000 !important;    
@@ -236,21 +236,20 @@ def download_structure(uniprot):
 # ============================================================
 # NEW: INTERACTIVE COMBINED VIEWER (Structure + Volcano)
 # ============================================================
-def render_interactive_dashboard(pdb_content, file_format, peptides_df):
+def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutoff, p_cutoff, selected_condition):
     """
     Creates a single HTML/JS component linking 3Dmol.js (structure) and Plotly.js (volcano).
     """
     
     # 1. Prepare Peptide Data for JavaScript
-    # We create a list of dicts: {index, start, end, x, y, color, seq}
     js_peptides = []
     
     # Normalize PDB content for JS injection (escape backticks)
     pdb_clean = json.dumps(pdb_content) 
     
-    # Create colors for the plot
-    # We'll use a simple logic here: Grey for non-sig (handled by filters), 
-    # but we pass the specific color calculated in Python.
+    # Determine plot threshold line values for JS
+    neg_log_p_thresh = -np.log10(p_cutoff)
+
     for i, row in peptides_df.iterrows():
         js_peptides.append({
             "index": i,
@@ -258,8 +257,9 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df):
             "end": int(row["end"]),
             "x": row["log2fc"],
             "y": row["neg_log_p"],
-            "color": row["color"],
-            "seq": row["sequence"]
+            "color": row["color"], # Significant gets color, others grey
+            "seq": row["sequence"],
+            "is_sig": row["is_significant"]
         })
 
     js_peptides_json = json.dumps(js_peptides)
@@ -318,6 +318,9 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df):
         const pdbData = {pdb_clean};
         const fileFormat = "{file_format}";
         const peptides = {js_peptides_json};
+        const fcThresh = {fc_cutoff};
+        const pThresh = {neg_log_p_thresh};
+        const xLabel = "Log2 ({selected_condition})";
 
         // --- 1. SETUP 3DMOL VIEWER ---
         const viewer = $3Dmol.createViewer("mol-container", {{
@@ -329,9 +332,11 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df):
         // Base Style: Transparent White Cartoon
         viewer.setStyle({{}}, {{cartoon: {{color: 'white', opacity: 0.6}}}});
         
-        // Apply Peptide Colors
+        // Apply Peptide Colors ONLY for Significant Peptides
         peptides.forEach(p => {{
-            viewer.addStyle({{resi: splitRange(p.start, p.end)}}, {{cartoon: {{color: p.color, opacity: 1.0}}}});
+            if (p.is_sig) {{
+                viewer.addStyle({{resi: splitRange(p.start, p.end)}}, {{cartoon: {{color: p.color, opacity: 1.0}}}});
+            }}
         }});
 
         viewer.zoomTo();
@@ -357,9 +362,10 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df):
             type: 'scatter',
             text: hoverText,
             marker: {{
-                size: 10,
+                size: 8,
                 color: colors,
-                line: {{color: 'black', width: 1}}
+                line: {{color: 'black', width: 0.5}},
+                opacity: 0.8
             }},
             hoverinfo: 'text+x+y'
         }};
@@ -368,8 +374,25 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df):
             title: 'Volcano Plot',
             hovermode: 'closest',
             margin: {{t: 40, l: 50, r: 20, b: 40}},
-            xaxis: {{title: 'Log2FC'}},
-            yaxis: {{title: '-Log10(P)'}}
+            xaxis: {{title: xLabel}},
+            yaxis: {{title: '-Log10(FDR)'}},
+            shapes: [
+                // Vertical Line +FC
+                {{
+                    type: 'line', x0: fcThresh, x1: fcThresh, y0: 0, y1: 1, yref: 'paper',
+                    line: {{color: 'grey', width: 1.5, dash: 'dash'}}
+                }},
+                // Vertical Line -FC
+                {{
+                    type: 'line', x0: -fcThresh, x1: -fcThresh, y0: 0, y1: 1, yref: 'paper',
+                    line: {{color: 'grey', width: 1.5, dash: 'dash'}}
+                }},
+                // Horizontal Line P-val
+                {{
+                    type: 'line', x0: 0, x1: 1, xref: 'paper', y0: pThresh, y1: pThresh,
+                    line: {{color: 'grey', width: 1.5, dash: 'dash'}}
+                }}
+            ]
         }};
 
         Plotly.newPlot('plot-container', [trace], layout);
@@ -394,17 +417,14 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df):
             // Reset Styles
             viewer.setStyle({{}}, {{cartoon: {{color: 'white', opacity: 0.6}}}});
             peptides.forEach(p => {{
-                viewer.addStyle({{resi: splitRange(p.start, p.end)}}, {{cartoon: {{color: p.color, opacity: 1.0}}}});
+                if(p.is_sig) {{
+                    viewer.addStyle({{resi: splitRange(p.start, p.end)}}, {{cartoon: {{color: p.color, opacity: 1.0}}}});
+                }}
             }});
             viewer.render();
         }});
 
         // --- 4. INTERACTION: STRUCTURE -> PLOT ---
-        // We use setHoverable to detect mouse over residues
-        
-        // This is tricky because atoms are many, points are few.
-        // Logic: When hovering an atom, find if it belongs to any peptide range.
-        
         let lastHoveredIdx = -1;
 
         viewer.setHoverable({{}}, true, function(atom, viewer, event, container) {{
@@ -423,19 +443,16 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df):
                 lastHoveredIdx = foundIdx;
                 
                 // Highlight Plot Point
-                // We use Plotly.restyle to change the color/size of the specific point
-                
-                // Construct new color/size arrays
                 const newColors = [...colors];
-                const newSizes = Array(peptides.length).fill(10);
+                const newSizes = Array(peptides.length).fill(8);
                 
                 newColors[foundIdx] = '#FFFF00'; // Yellow highlight
-                newSizes[foundIdx] = 20;         // Bigger size
+                newSizes[foundIdx] = 18;         // Bigger size
 
                 Plotly.restyle('plot-container', {{
                     'marker.color': [newColors],
                     'marker.size': [newSizes],
-                    'marker.line.width': [Array(peptides.length).fill(1).map((v, i) => i === foundIdx ? 3 : 1)]
+                    'marker.line.width': [Array(peptides.length).fill(0.5).map((v, i) => i === foundIdx ? 2 : 0.5)]
                 }});
                 
                 // Show custom tooltip on structure
@@ -451,8 +468,8 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df):
                 // Reset Plot
                 Plotly.restyle('plot-container', {{
                     'marker.color': [colors],
-                    'marker.size': [Array(peptides.length).fill(10)],
-                    'marker.line.width': [Array(peptides.length).fill(1)]
+                    'marker.size': [Array(peptides.length).fill(8)],
+                    'marker.line.width': [Array(peptides.length).fill(0.5)]
                 }});
                 lastHoveredIdx = -1;
                 document.getElementById('tooltip').style.display = 'none';
@@ -517,13 +534,11 @@ elif page == "Search":
         selected_condition = st.selectbox("Stress condition:", conditions)
         
         with st.expander("Filter Settings", expanded=True):
-            fc_cutoff = st.number_input("Fold-change cutoff (|AvgLog₂|):", value=1.0, min_value=0.0, step=0.1)
+            fc_cutoff = st.number_input("Fold-change cutoff (|Log2|):", value=1.0, min_value=0.0, step=0.1)
             p_cutoff = st.number_input("AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
 
         with st.expander("Visualization Settings"):
             color_mode = st.selectbox("Peptide color mode:", ["Fold-change heatmap", "Peptide type (red/cyan)"])
-            # Note: PLDDT coloring removed from logic to simplify the custom JS viewer, 
-            # defaulting to transparent white backbone to emphasize peptides.
 
     # --- Main Content ---
     if not query:
@@ -550,25 +565,34 @@ elif page == "Search":
             pval_col = f"AdjPval({selected_condition}).conformation"
             prot_all = df[df["uniprot_id"] == uniprot]
             
-            # Apply filters
-            peps = prot_all[
-                (prot_all[avg_col].abs() >= fc_cutoff) & (prot_all[pval_col] <= p_cutoff)
-            ]
-
+            # Identify Significant vs Non-Significant
+            # We don't filter out non-significant rows anymore, we keep them all but flag them
+            peps = prot_all.copy()
+            peps["is_sig"] = (peps[avg_col].abs() >= fc_cutoff) & (peps[pval_col] <= p_cutoff)
+            
+            sig_count = peps["is_sig"].sum()
+            
             if peps.empty:
-                st.warning("No peptides meet filters.")
+                 st.warning("No peptides found for this protein.")
             else:
-                st.success(f"{len(peps)} significant peptides found.")
+                 if sig_count > 0:
+                     st.success(f"{sig_count} significant peptides found out of {len(peps)} total.")
+                 else:
+                     st.info(f"No significant peptides found (Total: {len(peps)}). Adjust filters to see changes.")
 
             # --- Prepare Data for Visualization ---
             viz_data = []
             full_color = "#E1341E"
             half_color = "#1ECBE1"
+            grey_color = "#D3D3D3" # Light grey for non-sig
 
             if not peps.empty:
-                # Normalization for heatmap
+                # Normalization for heatmap (Calculated on significant range usually, or global)
+                # We base maxfc on the significant hits to make colors pop, or global max if none sig
                 fc_vals = peps[avg_col].astype(float)
-                maxfc = max(1.0, float(fc_vals.abs().max()))
+                maxfc = float(fc_vals.abs().max())
+                if maxfc == 0: maxfc = 1.0
+                
                 cmap = plt.get_cmap("coolwarm")
                 norm = mcolors.TwoSlopeNorm(vmin=-maxfc, vcenter=0, vmax=maxfc)
 
@@ -579,11 +603,16 @@ elif page == "Search":
                     fc = float(row[avg_col])
                     pval = float(row[pval_col])
                     seq = row["Peptide sequence"]
+                    is_sig = row["is_sig"]
 
-                    if color_mode == "Peptide type (red/cyan)":
-                        color = full_color if row["Peptide type"] == "full" else half_color
+                    # Determine Color
+                    if not is_sig:
+                        color = grey_color
                     else:
-                        color = mcolors.to_hex(cmap(norm(fc)))
+                        if color_mode == "Peptide type (red/cyan)":
+                            color = full_color if row["Peptide type"] == "full" else half_color
+                        else:
+                            color = mcolors.to_hex(cmap(norm(fc)))
                     
                     viz_data.append({
                         "start": start, 
@@ -591,7 +620,8 @@ elif page == "Search":
                         "color": color, 
                         "log2fc": fc,
                         "neg_log_p": -np.log10(pval + 1e-300),
-                        "sequence": seq
+                        "sequence": seq,
+                        "is_significant": bool(is_sig)
                     })
             
             viz_df = pd.DataFrame(viz_data)
@@ -606,19 +636,22 @@ elif page == "Search":
                 st.warning("Structure available, but no peptides to map.")
             else:
                 # --- RENDER INTERACTIVE DASHBOARD ---
-                html_view = render_interactive_dashboard(structure_text, file_format, viz_df)
+                # Pass thresholds and condition name to function
+                html_view = render_interactive_dashboard(
+                    structure_text, file_format, viz_df, fc_cutoff, p_cutoff, selected_condition
+                )
                 components.html(html_view, height=650)
                 
-                # Legend for Colors
-                if color_mode == "Fold-change heatmap":
-                     fig_cb, ax_cb = plt.subplots(figsize=(4, 0.3))
-                     cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
-                     cb1.set_label("Log2FC")
-                     st.pyplot(fig_cb, use_container_width=False)
+                # Legend for Colors (Only show if Heatmap is active and there are sig peptides)
+                if color_mode == "Fold-change heatmap" and sig_count > 0:
+                      fig_cb, ax_cb = plt.subplots(figsize=(4, 0.3))
+                      cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
+                      cb1.set_label("Log2FC")
+                      st.pyplot(fig_cb, use_container_width=False)
                 
-                st.info("💡 **Interactive:** Hover over a dot on the volcano plot to see it on the structure, or hover over the structure to highlight the dot.")
+                st.info("💡 **Interactive:** Hover over a dot on the volcano plot to see it on the structure. Grey dots are non-significant.")
 
-            # --- Abundance Plot (Kept Separate below) ---
+            # --- Abundance Plot ---
             st.subheader("Protein Abundance")
             prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
             
@@ -645,4 +678,4 @@ elif page == "Search":
             st.markdown("---")
             st.subheader("Peptide Data")
             if not peps.empty:
-                st.dataframe(peps[["Peptide sequence", "Start position", "End position", avg_col, pval_col]])
+                st.dataframe(peps[["Peptide sequence", "Start position", "End position", avg_col, pval_col, "is_sig"]])
