@@ -97,58 +97,43 @@ st.markdown("""
         background-color: transparent !important;
     }
 
-    /* --- 5. SEARCH EXAMPLE CHIPS (COMPACT FIXED) --- */
+    /* --- 5. ULTRA-COMPACT BUTTON CHIPS (NUCLEAR FIX) --- */
     
-    /* A. Target the BUTTON element in Sidebar */
+    /* Target the button itself in the sidebar */
     div[data-testid="stSidebar"] .stButton > button {
-        /* Force height and width to be small */
         width: auto !important;
-        min-height: 0px !important;
         height: auto !important;
-        
-        /* Remove internal spacing */
-        padding-top: 4px !important;
-        padding-bottom: 4px !important;
-        padding-left: 10px !important;
-        padding-right: 10px !important;
-        
-        /* Border and Color */
-        border-radius: 12px !important;
+        min-height: 0px !important;
+        padding: 2px 10px !important;    /* Very tight padding */
+        border-radius: 15px !important;
         background-color: #ffffff !important;
         border: 1px solid #cccccc !important;
-        color: #333333 !important;
-        
-        /* Alignment */
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
         margin-top: 2px !important;
     }
 
-    /* B. Target the TEXT (p tag) inside the button - THIS FIXES THE FONT SIZE */
-    div[data-testid="stSidebar"] .stButton > button p {
-        font-size: 10px !important;  /* Force text small */
-        line-height: 1.0 !important; /* proper vertical spacing */
-        padding: 0 !important;       /* Remove text padding */
-        margin: 0 !important;        /* Remove text margins */
-        font-weight: normal !important;
+    /* Target EVERYTHING inside the button (divs, p tags) to force size down */
+    div[data-testid="stSidebar"] .stButton > button * {
+        font-size: 11px !important;     /* Force small text */
+        line-height: 1.2 !important;    /* Squeeze vertical space */
+        padding: 0 !important;
+        margin: 0 !important;
     }
-    
-    /* Hover effects */
+
+    /* Hover State */
     div[data-testid="stSidebar"] .stButton > button:hover {
         border-color: #19CFE2 !important;
         background-color: #F0FBFC !important;
     }
     
-    /* Force hover text color change */
+    /* Force hover text color */
     div[data-testid="stSidebar"] .stButton > button:hover p {
         color: #19CFE2 !important;
     }
 
-    /* C. The "Examples:" Label Alignment */
+    /* Label Alignment */
     .example-label {
         margin-top: 6px !important; 
-        font-size: 11px !important;      
+        font-size: 12px !important;      
         color: #666 !important;
         font-weight: 600 !important;
         text-align: right !important;
@@ -326,16 +311,15 @@ elif page == "Search":
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
         # 2. Inline Examples (COMPACT)
-        # Tighter column ratios to keep buttons close to the label
-        c1, c2, c3 = st.columns([0.25, 0.30, 0.45], gap="small")
+        # We adjust ratios to ensure the label and buttons sit tightly
+        c1, c2, c3 = st.columns([0.25, 0.28, 0.47], gap="small")
         
         with c1:
-            st.markdown('<p class="example-label">Examples:</p>', unsafe_allow_html=True)
+            # Align text vertically with the buttons
+            st.markdown('<p class="example-label" style="margin-top: 5px;">Examples:</p>', unsafe_allow_html=True)
         with c2:
-            # IMPORTANT: use_container_width=False is required for "chip" size
             st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=False)
         with c3:
-            # IMPORTANT: use_container_width=False
             st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=False)
         
         # Spacer
