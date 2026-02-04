@@ -650,10 +650,13 @@ elif page == "Search":
                 
                 # Legend for Colors (Only show if Heatmap is active and there are sig peptides)
                 if color_mode == "Fold-change heatmap" and sig_count > 0:
-                      fig_cb, ax_cb = plt.subplots(figsize=(4, 0.3))
-                      cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
-                      cb1.set_label("Log2FC")
-                      st.pyplot(fig_cb, use_container_width=False)
+                    c_left, c_rest = st.columns([1, 2])
+
+                    with c_left:
+                          fig_cb, ax_cb = plt.subplots(figsize=(4, 0.3))
+                          cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
+                          cb1.set_label("Log2FC")
+                          st.pyplot(fig_cb, use_container_width=False)
                 
                 st.info("💡 **Interactive:** Hover over a dot on the volcano plot to see it on the structure. Grey dots are non-significant.")
 
