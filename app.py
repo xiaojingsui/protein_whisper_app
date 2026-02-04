@@ -97,47 +97,61 @@ st.markdown("""
         background-color: transparent !important;
     }
 
-    /* --- 5. SEARCH EXAMPLE CHIPS (COMPACT) --- */
+    /* --- 5. SEARCH EXAMPLE CHIPS (COMPACT FIXED) --- */
     
-    /* Target the buttons inside the sidebar */
+    /* A. Target the BUTTON element in Sidebar */
     div[data-testid="stSidebar"] .stButton > button {
-        /* Force compact size - CRITICAL FIXES HERE */
+        /* Force height and width to be small */
+        width: auto !important;
         min-height: 0px !important;
         height: auto !important;
-        width: auto !important;          /* Prevent stretching */
-        padding: 4px 12px !important;    /* Tight padding */
-        font-size: 11px !important;
-        border-radius: 12px !important;
-        line-height: 1 !important;
-        margin-top: 4px !important;
         
-        /* Coloring */
-        background-color: #FFFFFF !important;
-        border: 1px solid #CCCCCC !important;
-        color: #555555 !important;
-        box-shadow: none !important;
+        /* Remove internal spacing */
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        
+        /* Border and Color */
+        border-radius: 12px !important;
+        background-color: #ffffff !important;
+        border: 1px solid #cccccc !important;
+        color: #333333 !important;
+        
+        /* Alignment */
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin-top: 2px !important;
     }
 
-    /* Hover State */
+    /* B. Target the TEXT (p tag) inside the button - THIS FIXES THE FONT SIZE */
+    div[data-testid="stSidebar"] .stButton > button p {
+        font-size: 10px !important;  /* Force text small */
+        line-height: 1.0 !important; /* proper vertical spacing */
+        padding: 0 !important;       /* Remove text padding */
+        margin: 0 !important;        /* Remove text margins */
+        font-weight: normal !important;
+    }
+    
+    /* Hover effects */
     div[data-testid="stSidebar"] .stButton > button:hover {
         border-color: #19CFE2 !important;
-        color: #19CFE2 !important;
         background-color: #F0FBFC !important;
     }
     
-    /* Target the text inside the button specifically */
-    div[data-testid="stSidebar"] .stButton > button p {
-        font-size: 11px !important;
-        padding: 0px !important;
+    /* Force hover text color change */
+    div[data-testid="stSidebar"] .stButton > button:hover p {
+        color: #19CFE2 !important;
     }
 
-    /* The "Examples:" Label */
+    /* C. The "Examples:" Label Alignment */
     .example-label {
-        margin-top: 8px !important;      /* Alignment tweak */
-        font-size: 12px !important;      
+        margin-top: 6px !important; 
+        font-size: 11px !important;      
         color: #666 !important;
         font-weight: 600 !important;
-        text-align: right !important;    /* Push label to right to meet buttons */
+        text-align: right !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -312,8 +326,7 @@ elif page == "Search":
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
         # 2. Inline Examples (COMPACT)
-        # Using columns to create horizontal layout. 
-        # C1 is label, C2/C3 are buttons.
+        # Tighter column ratios to keep buttons close to the label
         c1, c2, c3 = st.columns([0.25, 0.30, 0.45], gap="small")
         
         with c1:
