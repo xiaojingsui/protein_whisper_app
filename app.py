@@ -97,40 +97,43 @@ st.markdown("""
         background-color: transparent !important;
     }
 
-    /* --- 5. SEARCH EXAMPLE CHIPS (FIXED & COMPACT) --- */
+    /* --- 5. SEARCH EXAMPLE CHIPS (COMPACT) --- */
     
-    /* Target buttons inside the sidebar specifically */
+    /* Target the buttons inside the sidebar */
     div[data-testid="stSidebar"] .stButton > button {
-        /* Force the button to be small and compact */
-        width: auto !important;
+        /* Force compact size */
         min-height: 0px !important;
         height: auto !important;
-        padding: 4px 12px !important;
-        font-size: 12px !important;
-        border-radius: 15px !important;
+        padding: 2px 10px !important;    /* Very tight padding */
+        font-size: 13px !important;
+        border-radius: 12px !important;  /* Pill shape */
         line-height: 1.2 !important;
         
-        /* Cosmetic styling */
+        /* Coloring */
         background-color: #FFFFFF !important;
         border: 1px solid #CCCCCC !important;
         color: #555555 !important;
-        transition: all 0.2s;
     }
 
-    /* Hover effect */
+    /* Hover State */
     div[data-testid="stSidebar"] .stButton > button:hover {
         border-color: #19CFE2 !important;
         color: #19CFE2 !important;
         background-color: #F0FBFC !important;
     }
+    
+    /* Target the text inside the button specifically */
+    div[data-testid="stSidebar"] .stButton > button p {
+        font-size: 13px !important;
+        padding: 0px !important;
+    }
 
-    /* The "Examples:" Label Styling */
+    /* The "Examples:" Label */
     .example-label {
-        margin-top: 6px !important;      /* Pushes text down to align with button center */
-        font-size: 12px !important;      /* Matches button font size */
-        color: #555 !important;
+        margin-top: 4px !important;      /* Align vertically with buttons */
+        font-size: 13px !important;      /* Match button text size */
+        color: #666 !important;
         font-weight: 600 !important;
-        text-align: right;               /* Aligns text near the buttons */
     }
     </style>
 """, unsafe_allow_html=True)
@@ -304,12 +307,11 @@ elif page == "Search":
         # 1. Search Box
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
-        # 2. Inline Examples (COMPACT LAYOUT)
-        # We use columns to place the text and buttons on the same row
-        c1, c2, c3 = st.columns([0.25, 0.30, 0.30])
+        # 2. Inline Examples (COMPACT)
+        # Ratio [0.30, 0.35, 0.35] keeps them tight
+        c1, c2, c3 = st.columns([0.30, 0.35, 0.35], gap="small")
         
         with c1:
-            # Custom HTML for the label to allow precise CSS alignment
             st.markdown('<p class="example-label">Examples:</p>', unsafe_allow_html=True)
         with c2:
             st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=True)
