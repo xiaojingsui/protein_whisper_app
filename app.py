@@ -97,17 +97,17 @@ st.markdown("""
         background-color: transparent !important;
     }
 
-    /* --- 5. SEARCH EXAMPLE CHIPS (NEW) --- */
-    /* This styles the buttons in the sidebar to look like the pills in your screenshot */
+    /* --- 5. SEARCH EXAMPLE CHIPS (UPDATED COMPACT STYLE) --- */
     div[data-testid="stSidebar"] .stButton > button {
         border-radius: 20px;
         border: 1px solid #CCCCCC;
         background-color: #FFFFFF;
         color: #555555;
-        font-size: 14px;
-        padding: 4px 12px;
+        font-size: 12px;        /* Smaller font */
+        padding: 2px 10px;      /* Tighter padding */
+        min-height: 0px;        /* Allow button to be short */
         height: auto;
-        min-height: 0px;
+        line-height: 1.4;
         transition: all 0.2s;
     }
 
@@ -115,6 +115,14 @@ st.markdown("""
         border-color: #19CFE2;
         color: #19CFE2;
         background-color: #F0FBFC;
+    }
+    
+    /* Small tweak to align the "Examples:" text with the buttons */
+    .example-label {
+        margin-top: 5px; 
+        font-size: 13px; 
+        color: #666;
+        font-weight: 500;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -248,7 +256,7 @@ page = st.radio(
     label_visibility="collapsed"
 )
 
-# SPACER for fixed navbar (Increased to 80px to clear navbar)
+# SPACER for fixed navbar
 st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
 
 # ============================================================
@@ -256,97 +264,69 @@ st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
 # ============================================================
 
 if page == "About":
-    # Sidebar Placeholder 
     with st.sidebar:
         st.info("Navigate to the **Search** tab to explore proteins.")
     
     st.title("About Protein Whisper")
     st.markdown("""
     **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. 
-      
-    It allows researchers to map peptide-level structural alterations directly onto 3D protein structures predicted by AlphaFold.
-
-    ### Key Features
-    * **Structure Mapping:** Visualizes peptides that undergo significant structural changes.
-    * **Dual-Layer Data:** Integrates conformational data with protein solubility and total abundance.
-    * **AlphaFold Integration:** Automatically fetches predicted structures from the EBI AlphaFold database.
+    It allows researchers to map peptide-level structural alterations directly onto 3D protein structures.
     """)
 
 elif page == "Guides":
-    # Sidebar Placeholder
     with st.sidebar:
         st.info("Navigate to the **Search** tab to explore proteins.")
 
     st.title("User Guide")
     st.markdown("### 1. How to Search")
     st.info("Click the **Search** tab above to begin.")
-    st.markdown("""
-    1.  **Gene/Protein:** Enter a *C. elegans* gene symbol (e.g., `unc-54`) or a UniProt ID in the sidebar.
-    2.  **Condition:** Select the stress condition you wish to compare.
-    3.  **Filters:** Adjust the Fold-Change and P-value cutoffs.
-    """)
-    st.markdown("### 2. Visualization")
-    st.markdown("""
-    * **3D Viewer:** Backbone is white; **Red** = fully-tryptic, **Cyan** = semi-tryptic (structural change).
-    * **Volcano Plot:** Shows statistical significance.
-    * **Abundance Plot:** Displays Soluble vs. Pellet vs. Total abundance.
-    """)
 
 elif page == "Search":
     # --- Sidebar for inputs ---
     with st.sidebar:
         st.header("Search Parameters")
         
-        # --- NEW CODE: Session State Logic for Clickable Examples ---
+        # Session State Logic
         if 'search_term' not in st.session_state:
             st.session_state.search_term = ""
 
         def set_search(term):
             st.session_state.search_term = term
 
-        # Input box bound to session state
+        # 1. Search Box
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
-        # Clickable Examples
-        st.markdown(
-            """<span style="font-size: 12px; color: #666; margin-bottom: 5px;">Try searching for:</span>""", 
-            unsafe_allow_html=True
-        )
-        col_ex1, col_ex2 = st.columns(2)
-        with col_ex1:
-            st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=True)
-        with col_ex2:
-            st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=True)
-        # -----------------------------------------------------------
+        # 2. Inline Examples (UPDATED LAYOUT)
+        # Using columns to put "Examples:" label and buttons on the same line
+        # [0.25, 0.35, 0.35] ratio keeps them tight
+        c1, c2, c3 = st.columns([0.28, 0.36, 0.36], gap="small")
         
-        st.write("") # Spacer
+        with c1:
+            # Custom styled HTML for the label to align vertically with buttons
+            st.markdown('<p class="example-label">Examples:</p>', unsafe_allow_html=True)
+        with c2:
+            st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=True)
+        with c3:
+            st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=True)
+        
+        # Spacer
+        st.write("") 
 
+        # 3. Rest of controls
         selected_condition = st.selectbox("Stress condition:", conditions)
         
         with st.expander("Filter Settings", expanded=True):
-            fc_cutoff = st.number_input(
-                "Fold-change cutoff (|AvgLog₂|):", value=1.0, min_value=0.0, max_value=10.0, step=0.1)
-            p_cutoff = st.number_input(
-                "AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
+            fc_cutoff = st.number_input("Fold-change cutoff (|AvgLog₂|):", value=1.0, min_value=0.0, step=0.1)
+            p_cutoff = st.number_input("AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
 
         with st.expander("Visualization Settings"):
-            color_mode = st.selectbox(
-                "Peptide color mode:",
-                ["Peptide type (red/cyan)", "Fold-change heatmap"]
-            )
-            plddt_coloring = st.checkbox(
-                "Color backbone by AlphaFold pLDDT", value=False
-            )
+            color_mode = st.selectbox("Peptide color mode:", ["Peptide type (red/cyan)", "Fold-change heatmap"])
+            plddt_coloring = st.checkbox("Color backbone by AlphaFold pLDDT", value=False)
 
     # --- Main Content ---
     if not query:
-        # UPDATED: Changed color to light teal (#19CFE2)
         st.markdown("<h2 style='text-align: center; color: #19CFE2;'>Structure Viewer</h2>", unsafe_allow_html=True)
-        
-        # Help text
         st.info("Type a C. elegans gene name or UniProt ID in the **sidebar** to explore a protein.")
-        
-        # UPDATED: Changed subtext color to light teal (#19CFE2)
         st.markdown(
             """
             <div style="text-align: center; margin-top: 50px;">
