@@ -655,7 +655,7 @@ elif page == "Search":
                     with c_left:
                           fig_cb, ax_cb = plt.subplots(figsize=(2, 0.15))
                           cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
-                          cb1.set_label(r"Log$_2$FC")
+                          cb1.set_label(r"Log$_2$FC", fontsize=12)
                           st.pyplot(fig_cb, use_container_width=False)
                 
                 st.info("💡 **Interactive:** Hover over a dot on the volcano plot to see it on the structure. Grey dots are non-significant.")
