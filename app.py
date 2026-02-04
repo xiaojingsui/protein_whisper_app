@@ -104,15 +104,16 @@ st.markdown("""
         /* Force compact size */
         min-height: 0px !important;
         height: auto !important;
-        padding: 2px 10px !important;    /* Very tight padding */
-        font-size: 13px !important;
-        border-radius: 12px !important;  /* Pill shape */
-        line-height: 1.2 !important;
+        padding: 4px 12px !important;    /* Reduced padding */
+        font-size: 12px !important;      /* Smaller font */
+        border-radius: 10px !important;  /* Tighter corners */
+        line-height: 1 !important;       /* Compact text height */
         
         /* Coloring */
         background-color: #FFFFFF !important;
         border: 1px solid #CCCCCC !important;
         color: #555555 !important;
+        box-shadow: none !important;
     }
 
     /* Hover State */
@@ -124,14 +125,14 @@ st.markdown("""
     
     /* Target the text inside the button specifically */
     div[data-testid="stSidebar"] .stButton > button p {
-        font-size: 13px !important;
+        font-size: 12px !important;
         padding: 0px !important;
     }
 
     /* The "Examples:" Label */
     .example-label {
-        margin-top: 4px !important;      /* Align vertically with buttons */
-        font-size: 13px !important;      /* Match button text size */
+        margin-top: 6px !important;      /* Slight alignment tweak */
+        font-size: 12px !important;      
         color: #666 !important;
         font-weight: 600 !important;
     }
@@ -308,15 +309,17 @@ elif page == "Search":
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
         # 2. Inline Examples (COMPACT)
-        # Ratio [0.30, 0.35, 0.35] keeps them tight
-        c1, c2, c3 = st.columns([0.30, 0.35, 0.35], gap="small")
+        # Adjusted ratio to keep buttons closer to the label
+        c1, c2, c3 = st.columns([0.25, 0.30, 0.45], gap="small")
         
         with c1:
             st.markdown('<p class="example-label">Examples:</p>', unsafe_allow_html=True)
         with c2:
-            st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=True)
+            # Change use_container_width to False so button shrinks to text size
+            st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=False)
         with c3:
-            st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=True)
+            # Change use_container_width to False so button shrinks to text size
+            st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=False)
         
         # Spacer
         st.write("") 
