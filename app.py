@@ -9,6 +9,12 @@ import matplotlib.colors as mcolors
 import json
 
 # ============================================================
+# MATPLOTLIB FONT CONFIGURATION (Force Arial for static plots)
+# ============================================================
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = ['Arial', 'Helvetica', 'DejaVu Sans']
+
+# ============================================================
 # Page Configuration
 # ============================================================
 st.set_page_config(
@@ -23,7 +29,8 @@ st.set_page_config(
 st.markdown("""
     <style>
     /* --- 1. GLOBAL FONTS --- */
-    html, body, p, h1, h2, h3, h4, h5, h6 {
+    /* Force Arial on everything, including inputs, buttons, and text */
+    html, body, [class*="css"], font, div, p, h1, h2, h3, h4, h5, h6, span, button, input, select, textarea {
         font-family: Arial, Helvetica, sans-serif !important;
     }
     
@@ -55,7 +62,7 @@ st.markdown("""
     div[role="radiogroup"] {
         position: fixed !important;        
         top: 0 !important;                  
-        left: 0 !important;                
+        left: 0 !important;                 
         width: 100vw !important;            
         z-index: 1000000 !important;    
         background-color: #FFFFFF;        
@@ -118,10 +125,11 @@ st.markdown("""
         color: #006064 !important;
         text-decoration: underline !important;
         padding: 0px !important;
+        font-family: Arial, Helvetica, sans-serif !important;
     }
 
     div[data-testid="stSidebar"] .stButton > button:hover {
-        color: #19CFE2 !important;     
+        color: #19CFE2 !important;      
         text-decoration: none !important;
     }
     
@@ -286,6 +294,10 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
         <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
         <style>
+            /* Force Arial in the HTML Component */
+            body, .tooltip, .js-plotly-plot {{
+                font-family: Arial, Helvetica, sans-serif !important;
+            }}
             .container {{
                 display: flex;
                 flex-direction: row;
@@ -313,8 +325,8 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
                 pointer-events: none;
                 display: none;
                 z-index: 100;
-                font-family: sans-serif;
                 font-size: 12px;
+                font-family: Arial, Helvetica, sans-serif; /* Explicit Font */
             }}
         </style>
     </head>
@@ -385,6 +397,7 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
 
         const layout = {{
             title: 'PK Accessibility',
+            font: {{ family: 'Arial, Helvetica, sans-serif' }}, // Force Plotly Font
             hovermode: 'closest',
             margin: {{t: 40, l: 50, r: 20, b: 40}},
             xaxis: {{
@@ -598,12 +611,12 @@ elif page == "Search":
             sig_count = peps["is_sig"].sum()
             
             if peps.empty:
-                 st.warning("No peptides found for this protein.")
+                  st.warning("No peptides found for this protein.")
             else:
-                 if sig_count > 0:
-                     st.success(f"{sig_count} significant peptides found out of {len(peps)} total.")
-                 else:
-                     st.info(f"No significant peptides found (Total: {len(peps)}). Adjust filters to see changes.")
+                  if sig_count > 0:
+                      st.success(f"{sig_count} significant peptides found out of {len(peps)} total.")
+                  else:
+                      st.info(f"No significant peptides found (Total: {len(peps)}). Adjust filters to see changes.")
 
             # --- Prepare Data for Visualization ---
             viz_data = []
