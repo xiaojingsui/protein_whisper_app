@@ -97,55 +97,54 @@ st.markdown("""
         background-color: transparent !important;
     }
 
-    /* --- 5. TEXT-ONLY LINK BUTTONS (MODIFIED) --- */
+    /* --- 5. TEXT-ONLY LINK BUTTONS (REVISED) --- */
     
-    /* Remove box/border/background to make it look like a text link */
+    /* Target buttons specifically within the Sidebar */
     div[data-testid="stSidebar"] .stButton > button {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: #006064 !important; /* Teal link color */
+        text-decoration: underline !important;
+        padding: 0px !important;
         width: auto !important;
         height: auto !important;
         min-height: 0px !important;
-        padding: 0px !important;
-        margin-top: 6px !important; /* Align with the 'Examples:' text */
-        border: none !important;
-        background-color: transparent !important;
-        text-decoration: underline !important;
-        color: #006064 !important; /* Teal link color */
-        box-shadow: none !important;
-    }
-
-    /* Adjust font size for the link text */
-    div[data-testid="stSidebar"] .stButton > button * {
-        font-size: 13px !important;     
-        line-height: 1.2 !important;    
+        margin-top: 5px !important; /* Vertical alignment with the label */
+        line-height: 1.2 !important;
         font-weight: normal !important;
+        display: inline-block !important;
     }
 
-    /* Hover State - Change color, maybe remove underline */
+    /* Adjust font size inside the button */
+    div[data-testid="stSidebar"] .stButton > button * {
+        font-size: 14px !important;     
+    }
+
+    /* Hover State */
     div[data-testid="stSidebar"] .stButton > button:hover {
         color: #19CFE2 !important;     /* Lighter teal on hover */
+        text-decoration: none !important; /* Remove underline on hover */
         background-color: transparent !important;
-        border: none !important;
-        text-decoration: none !important; /* Optional: remove underline on hover */
     }
     
-    /* Active/Focus State - Remove outline */
-    div[data-testid="stSidebar"] .stButton > button:focus:not(:active) {
-        border-color: transparent !important;
-        color: #006064 !important;
-    }
-    
+    /* Active/Focus State - Remove annoying red border/outline */
+    div[data-testid="stSidebar"] .stButton > button:focus,
     div[data-testid="stSidebar"] .stButton > button:active {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        color: #006064 !important;
         background-color: transparent !important;
-        color: #19CFE2 !important;
     }
 
-    /* Label Alignment */
+    /* Label Alignment Helper */
     .example-label {
-        margin-top: 6px !important; 
-        font-size: 13px !important;       
+        margin-top: 5px !important; 
+        font-size: 14px !important;        
         color: #666 !important;
         font-weight: 600 !important;
-        text-align: right !important;
+        margin-right: 5px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -320,10 +319,10 @@ elif page == "Search":
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
         # 2. Inline Examples (Text Links)
-        c1, c2, c3 = st.columns([0.25, 0.28, 0.47], gap="small")
+        # Using tight columns so the "text links" sit next to the label
+        c1, c2, c3 = st.columns([0.25, 0.25, 0.50], gap="small")
         
         with c1:
-            # Label
             st.markdown('<p class="example-label">Examples:</p>', unsafe_allow_html=True)
         with c2:
             st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=False)
