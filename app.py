@@ -379,7 +379,7 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
                 zeroline: false  // Removes the default x=0 line
             }},
             yaxis: {{
-                title: '-Log<sub>10</sub>(FDR)',
+                title: '-Log<sub>10</sub> (FDR)',
                 rangemode: 'tozero' // Forces Y-axis to start at 0
             }},
             shapes: [
