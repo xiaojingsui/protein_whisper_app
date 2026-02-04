@@ -371,7 +371,7 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
         }};
 
         const layout = {{
-            title: 'Volcano Plot',
+            title: 'PK Accessibility',
             hovermode: 'closest',
             margin: {{t: 40, l: 50, r: 20, b: 40}},
             xaxis: {{
