@@ -97,7 +97,20 @@ st.markdown("""
         background-color: transparent !important;
     }
 
-    /* --- 5. TEXT-ONLY LINK BUTTONS (REVISED) --- */
+    /* --- 5. LOGO STYLING (NEW) --- */
+    .logo-text {
+        position: fixed;
+        top: 12px; /* Aligns with the navbar vertical center */
+        left: 25px;
+        font-size: 22px;
+        font-weight: bold;
+        color: #445550; /* Matches navbar text color */
+        z-index: 1000002; /* Sits on top of header/navbar */
+        font-family: Arial, Helvetica, sans-serif;
+        pointer-events: none; /* Ensures it is just a visual label, not clickable */
+    }
+
+    /* --- 6. TEXT-ONLY LINK BUTTONS (REVISED) --- */
     
     /* Target buttons specifically within the Sidebar */
     div[data-testid="stSidebar"] .stButton > button {
@@ -118,7 +131,7 @@ st.markdown("""
 
     /* Adjust font size inside the button */
     div[data-testid="stSidebar"] .stButton > button * {
-        font-size: 14px !important;     
+        font-size: 14px !important;      
     }
 
     /* Hover State */
@@ -149,6 +162,11 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+# ============================================================
+# INJECT LOGO
+# ============================================================
+st.markdown('<div class="logo-text">ProteinWhisper</div>', unsafe_allow_html=True)
 
 # ============================================================
 # Data Loading & Caching
