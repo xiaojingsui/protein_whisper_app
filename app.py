@@ -653,7 +653,7 @@ elif page == "Search":
                     c_left, c_rest = st.columns([1, 2])
 
                     with c_left:
-                          fig_cb, ax_cb = plt.subplots(figsize=(2, 0.15))
+                          fig_cb, ax_cb = plt.subplots(figsize=(1, 0.1))
                           cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
                           cb1.set_label(r"Log$_2$FC", fontsize=8)
                           cb1.ax.tick_params(labelsize=8)
