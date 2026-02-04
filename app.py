@@ -106,7 +106,7 @@ st.markdown("""
         min-height: 0px !important;
         height: auto !important;
         padding: 4px 12px !important;
-        font-size: 10px !important;
+        font-size: 12px !important;
         border-radius: 15px !important;
         line-height: 1.2 !important;
         
