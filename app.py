@@ -127,7 +127,7 @@ st.markdown("""
     /* The "Examples:" Label Styling */
     .example-label {
         margin-top: 6px !important;      /* Pushes text down to align with button center */
-        font-size: 10px !important;      /* Matches button font size */
+        font-size: 12px !important;      /* Matches button font size */
         color: #555 !important;
         font-weight: 600 !important;
         text-align: right;               /* Aligns text near the buttons */
