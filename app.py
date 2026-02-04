@@ -540,7 +540,7 @@ elif page == "Search":
         selected_condition = st.selectbox("Stress condition:", conditions)
         
         with st.expander("Filter Settings", expanded=True):
-            fc_cutoff = st.number_input("Fold-change cutoff (|Log2|):", value=1.0, min_value=0.0, step=0.1)
+            fc_cutoff = st.number_input(r"Fold-change cutoff (|Log$_2$|):", value=1.0, min_value=0.0, step=0.1)
             p_cutoff = st.number_input("AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
 
         with st.expander("Visualization Settings"):
@@ -655,7 +655,7 @@ elif page == "Search":
                     with c_left:
                           fig_cb, ax_cb = plt.subplots(figsize=(2, 0.15))
                           cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
-                          cb1.set_label("Log2FC")
+                          cb1.set_label(r"Log$_2$FC")
                           st.pyplot(fig_cb, use_container_width=False)
                 
                 st.info("💡 **Interactive:** Hover over a dot on the volcano plot to see it on the structure. Grey dots are non-significant.")
@@ -679,7 +679,7 @@ elif page == "Search":
                 ax_abun.axhline(0, color='grey', linewidth=0.8)
                 ax_abun.set_xticks(x_pos)
                 ax_abun.set_xticklabels(labels)
-                ax_abun.set_ylabel("Log2 Fold Change")
+                ax_abun.set_ylabel(r"Log$_2$ Fold Change")
                 st.pyplot(fig_abun)
             else:
                 st.write("No abundance data available.")
