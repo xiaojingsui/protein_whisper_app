@@ -23,29 +23,34 @@ st.set_page_config(
 st.markdown("""
     <style>
     /* --- 1. GLOBAL FONTS --- */
+    /* Removed force background-color to fix text blocking */
     html, body, p, h1, h2, h3, h4, h5, h6 {
         font-family: Arial, Helvetica, sans-serif !important;
     }
     
     /* --- 2. HEADER & SIDEBAR TOGGLE FIX --- */
+    /* Make the standard header transparent so we can see the custom navbar behind it */
     [data-testid="stHeader"] {
         background-color: transparent !important;
-        height: 4rem !important;
-        pointer-events: none !important;
-        z-index: 1000001 !important;
+        height: 4rem !important; /* Match height approx to navbar */
+        pointer-events: none !important; /* CRITICAL: Let clicks pass through the header strip to the navbar buttons below */
+        z-index: 1000001 !important; /* Sit on top of everything */
     }
     
+    /* Re-enable clicking ONLY for the sidebar toggle button (hamburger/arrow) */
     [data-testid="stHeader"] button[title="View fullscreen"], 
     [data-testid="stHeader"] button[kind="header"] {
         pointer-events: auto !important;
-        color: #445550 !important;
+        color: #445550 !important; /* Make the icon dark enough to see */
     }
     
+    /* Hide the specific "Deploy" and "Running" decorations to keep it clean */
     [data-testid="stDecoration"], [data-testid="stHeader"] > div:last-child {
         display: none !important;
     }
 
     /* --- 3. LAYOUT PADDING --- */
+    /* Push content down so it doesn't hide behind the fixed navbar */
     .block-container {
         padding-top: 6rem !important; 
         padding-bottom: 5rem !important;
@@ -53,15 +58,18 @@ st.markdown("""
 
     /* --- 4. CUSTOM NAVBAR --- */
     div[role="radiogroup"] {
-        position: fixed !important;        
+        position: fixed !important;       
         top: 0 !important;                
         left: 0 !important;               
         width: 100vw !important;          
-        z-index: 1000000 !important;    
+        z-index: 1000000 !important; /* High, but below the stHeader button */   
+        
         background-color: #FFFFFF;        
+        
         display: flex !important;
         justify-content: center !important; 
         padding: 10px 0 !important; 
+        
         align-items: center !important; 
         border-bottom: 1px solid #E0E0E0;
     }
@@ -95,26 +103,6 @@ st.markdown("""
     
     div[role="radiogroup"] label[data-testid="stRadioOption"] {
         background-color: transparent !important;
-    }
-
-    /* --- 5. SEARCH EXAMPLE CHIPS (NEW) --- */
-    /* This styles the buttons in the sidebar to look like the pills in your screenshot */
-    div[data-testid="stSidebar"] .stButton > button {
-        border-radius: 20px;
-        border: 1px solid #CCCCCC;
-        background-color: #FFFFFF;
-        color: #555555;
-        font-size: 14px;
-        padding: 4px 12px;
-        height: auto;
-        min-height: 0px;
-        transition: all 0.2s;
-    }
-
-    div[data-testid="stSidebar"] .stButton > button:hover {
-        border-color: #19CFE2;
-        color: #19CFE2;
-        background-color: #F0FBFC;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -296,31 +284,7 @@ elif page == "Search":
     # --- Sidebar for inputs ---
     with st.sidebar:
         st.header("Search Parameters")
-        
-        # --- NEW CODE: Session State Logic for Clickable Examples ---
-        if 'search_term' not in st.session_state:
-            st.session_state.search_term = ""
-
-        def set_search(term):
-            st.session_state.search_term = term
-
-        # Input box bound to session state
-        query = st.text_input("Search gene or UniProt ID:", key="search_term")
-        
-        # Clickable Examples
-        st.markdown(
-            """<span style="font-size: 12px; color: #666; margin-bottom: 5px;">Try searching for:</span>""", 
-            unsafe_allow_html=True
-        )
-        col_ex1, col_ex2 = st.columns(2)
-        with col_ex1:
-            st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=True)
-        with col_ex2:
-            st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=True)
-        # -----------------------------------------------------------
-        
-        st.write("") # Spacer
-
+        query = st.text_input("Search gene or UniProt ID:", "")
         selected_condition = st.selectbox("Stress condition:", conditions)
         
         with st.expander("Filter Settings", expanded=True):
@@ -342,9 +306,7 @@ elif page == "Search":
     if not query:
         # UPDATED: Changed color to light teal (#19CFE2)
         st.markdown("<h2 style='text-align: center; color: #19CFE2;'>Structure Viewer</h2>", unsafe_allow_html=True)
-        
-        # Help text
-        st.info("Type a C. elegans gene name or UniProt ID in the **sidebar** to explore a protein.")
+        st.info("Type a C. elegans gene name or UniProt ID in the **sidebar** to explore a protein. Try 'unc-54'.")
         
         # UPDATED: Changed subtext color to light teal (#19CFE2)
         st.markdown(
