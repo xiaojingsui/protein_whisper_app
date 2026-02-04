@@ -138,17 +138,26 @@ def render_structure(structure_text, segments, file_format, plddt_coloring):
     return view
 
 # ============================================================
-# Sidebar Navigation
+# Top Navigation
 # ============================================================
-st.sidebar.title("Protein Whisper")
-page = st.sidebar.radio("Navigation", ["Search", "About", "Guides"])
-st.sidebar.markdown("---")
+st.title("Protein Whisper")
+
+# Using horizontal radio buttons to act as a top navbar
+# label_visibility="collapsed" hides the word "Navigation" to look cleaner
+page = st.radio(
+    "Navigation", 
+    ["Search", "About", "Guides"], 
+    horizontal=True, 
+    label_visibility="collapsed"
+)
+
+st.markdown("---")
 
 # ============================================================
 # PAGE: ABOUT
 # ============================================================
 if page == "About":
-    st.title("About Protein Whisper")
+    st.header("About Protein Whisper")
     st.markdown("""
     **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. 
     
@@ -167,10 +176,10 @@ if page == "About":
 # PAGE: GUIDES
 # ============================================================
 elif page == "Guides":
-    st.title("User Guide")
+    st.header("User Guide")
     
     st.markdown("### 1. How to Search")
-    st.info("Navigate to the **Search** tab to begin.")
+    st.info("Click the **Search** tab above to begin.")
     st.markdown("""
     1.  **Gene/Protein:** Enter a *C. elegans* gene symbol (e.g., `unc-54`) or a UniProt ID in the sidebar.
     2.  **Condition:** Select the stress condition you wish to compare against the wild-type/control.
@@ -211,7 +220,7 @@ elif page == "Search":
         )
 
     # --- Main Search Logic ---
-    st.title("Structure Viewer")
+    st.header("Structure Viewer")
 
     if not query:
         # Intro Screen
@@ -388,7 +397,4 @@ elif page == "Search":
             # --- Table ---
             st.subheader("Peptides Passing Conformation Filters")
             st.dataframe(peps[["Peptide sequence", "Start position", "End position", avg_col, pval_col]])
-
-# ============================================================
-# END OF SCRIPT
-# ============================================================
+            
