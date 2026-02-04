@@ -14,52 +14,83 @@ import matplotlib.colors as mcolors
 st.set_page_config(
     page_title="Protein Whisper",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Start collapsed to emphasize top nav
+    initial_sidebar_state="collapsed"
 )
 
 # ============================================================
-# Custom CSS for Top Navigation Bar
+# 4. GLOBAL CSS & NAVIGATION STYLING
 # ============================================================
 st.markdown("""
-<style>
-    /* 1. Hide the standard Streamlit radio buttons (the circles) */
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child {
-        display: none; 
+    <style>
+    /* --- GLOBAL FONTS & MAIN CONTAINER --- */
+    /* Force Arial on everything in the app */
+    html, body, [data-testid="stAppViewContainer"], .stApp, p, h1, h2, h3, h4, h5, h6, span, div {
+        font-family: Arial, Helvetica, sans-serif !important;
+        background-color: #FBFEFF;
+    }
+    
+    /* Remove standard top padding so the navbar sits at the very top */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 5rem !important;
     }
 
-    /* 2. Style the container to center the buttons */
-    div[data-testid="stRadio"] > div[role="radiogroup"] {
-        display: flex;
-        justify-content: center;
-        gap: 15px;
-        background-color: #f8f9fa; /* Light grey background for the bar */
-        padding: 10px;
-        border-radius: 10px;
-        margin-bottom: 25px;
+    /* Hide standard Streamlit header elements */
+    [data-testid="stHeader"] { display: none !important; }
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+
+    /* --- CUSTOM NAVBAR (STYLING THE RADIO BUTTON) --- */
+    div[role="radiogroup"] {
+        position: fixed !important;      
+        top: 0 !important;                
+        left: 0 !important;               
+        width: 100vw !important;          
+        z-index: 99999 !important;        
+        
+        background-color: #FFFFFF;        
+        
+        display: flex !important;
+        justify-content: center !important; 
+        padding: 10px 0 !important; 
+        
+        align-items: center !important; 
+        border-bottom: 1px solid #E0E0E0;
     }
 
-    /* 3. Style the labels to look like buttons/tabs */
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-        background-color: #ffffff;
-        padding: 10px 25px;
-        border-radius: 5px;
-        border: 1px solid #e0e0e0;
+    div[role="radiogroup"] label > div:first-child {
+        display: none !important;
+    }
+
+    div[role="radiogroup"] label {
+        margin-right: 0px !important;
+        background-color: transparent !important;
+        border: none !important;
+    }
+
+    div[role="radiogroup"] p {
+        font-family: Arial, Helvetica, sans-serif !important;  
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        color: #445550 !important; 
         cursor: pointer;
-        transition: all 0.3s;
-        font-weight: 500;
-        color: #31333F;
+        padding: 8px 20px;
+        border-radius: 20px;
+        transition: all 0.3s ease;
+        background-color: transparent;
     }
 
-    /* 4. Hover effect */
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
-        background-color: #eff2f6;
-        border-color: #19CFE2;
-        color: #19CFE2;
+    div[role="radiogroup"] p:hover {
+        background-color: #F0FBFC;
+        color: #006064 !important;
     }
-
-    /* Note: Streamlit doesn't easily allow targeting the "selected" state via CSS alone 
-       without complex selectors, but the text color usually changes to primary theme color. */
-</style>
+    
+    /* Highlight the selected item (Streamlit usually wraps selected text in a generic span, 
+       but we can approximate focus/active states or just rely on the UI feedback) */
+    div[role="radiogroup"] label[data-testid="stRadioOption"] {
+        background-color: transparent !important;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
 # ============================================================
@@ -182,15 +213,19 @@ def render_structure(structure_text, segments, file_format, plddt_coloring):
     return view
 
 # ============================================================
-# TOP NAVIGATION UI
+# NAVIGATION CONTROLLER
 # ============================================================
-# We use a horizontal radio button, hidden labels, and CSS to make it look like a navbar
+# Use a horizontal radio button, hidden labels, and CSS to make it look like a navbar
 page = st.radio(
     "Main Navigation", 
     ["Search", "About", "Guides"], 
     horizontal=True,
     label_visibility="collapsed"
 )
+
+# SPACER: Because the navbar is fixed (position: fixed), it sits ON TOP of the content.
+# We need to push the content down so it doesn't hide behind the navbar.
+st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
 
 # ============================================================
 # PAGE: ABOUT
