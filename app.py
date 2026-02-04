@@ -97,32 +97,44 @@ st.markdown("""
         background-color: transparent !important;
     }
 
-    /* --- 5. SEARCH EXAMPLE CHIPS (UPDATED COMPACT STYLE) --- */
+    /* --- 5. SEARCH EXAMPLE CHIPS (FIXED & COMPACT) --- */
+    
+    /* 1. Target the button element directly */
     div[data-testid="stSidebar"] .stButton > button {
-        border-radius: 20px;
-        border: 1px solid #CCCCCC;
-        background-color: #FFFFFF;
-        color: #555555;
-        font-size: 8px;        /* Smaller font */
-        padding: 2px 10px;      /* Tighter padding */
-        min-height: 0px;        /* Allow button to be short */
-        height: auto;
-        line-height: 1.4;
+        border-radius: 20px !important;
+        border: 1px solid #CCCCCC !important;
+        background-color: #FFFFFF !important;
+        color: #555555 !important;
+        
+        /* Typography & Layout Forces */
+        font-size: 12px !important;      /* Force font size */
+        padding: 4px 10px !important;    /* Force padding */
+        min-height: 0px !important;      /* Remove minimum height constraints */
+        height: auto !important;         /* Auto height */
+        line-height: 1.2 !important;     /* Tighter line height */
+        white-space: nowrap !important;  /* CRITICAL: Prevents "UNC-54" from wrapping */
+        
         transition: all 0.2s;
     }
 
+    /* 2. Target the paragraph INSIDE the button (Streamlit often puts text in <p>) */
+    div[data-testid="stSidebar"] .stButton > button p {
+        font-size: 12px !important;      /* Ensure inner text matches button size */
+    }
+
+    /* 3. Hover Effects */
     div[data-testid="stSidebar"] .stButton > button:hover {
-        border-color: #19CFE2;
-        color: #19CFE2;
-        background-color: #F0FBFC;
+        border-color: #19CFE2 !important;
+        color: #19CFE2 !important;
+        background-color: #F0FBFC !important;
     }
     
-    /* Small tweak to align the "Examples:" text with the buttons */
+    /* 4. The "Examples:" Label Styling */
     .example-label {
-        margin-top: 5px; 
-        font-size: 8px; 
-        color: #666;
-        font-weight: 500;
+        margin-top: 8px !important;      /* Align vertically with buttons */
+        font-size: 12px !important;      /* Match button font size */
+        color: #666 !important;
+        font-weight: 600 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -299,10 +311,10 @@ elif page == "Search":
         # 2. Inline Examples (UPDATED LAYOUT)
         # Using columns to put "Examples:" label and buttons on the same line
         # [0.25, 0.35, 0.35] ratio keeps them tight
-        c1, c2, c3 = st.columns([0.28, 0.36, 0.36], gap="small")
+        # ADJUSTED RATIOS: Give the first column slightly more space
+        c1, c2, c3 = st.columns([0.30, 0.35, 0.35], gap="small")
         
         with c1:
-            # Custom styled HTML for the label to align vertically with buttons
             st.markdown('<p class="example-label">Examples:</p>', unsafe_allow_html=True)
         with c2:
             st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=True)
