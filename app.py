@@ -120,7 +120,7 @@ st.markdown("""
     /* Small tweak to align the "Examples:" text with the buttons */
     .example-label {
         margin-top: 5px; 
-        font-size: 13px; 
+        font-size: 8px; 
         color: #666;
         font-weight: 500;
     }
