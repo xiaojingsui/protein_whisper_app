@@ -23,11 +23,9 @@ st.set_page_config(
 st.markdown("""
     <style>
     /* --- 1. GLOBAL FONTS --- */
-    /* apply fonts to body and text elements, but NOT generic divs/spans 
-       to avoid breaking Streamlit's icon fonts (which causes the 'keyboard_double...' text) */
+    /* Removed force background-color to fix text blocking */
     html, body, p, h1, h2, h3, h4, h5, h6 {
         font-family: Arial, Helvetica, sans-serif !important;
-        background-color: #FBFEFF;
     }
     
     /* --- 2. HEADER & SIDEBAR TOGGLE FIX --- */
@@ -60,7 +58,7 @@ st.markdown("""
 
     /* --- 4. CUSTOM NAVBAR --- */
     div[role="radiogroup"] {
-        position: fixed !important;      
+        position: fixed !important;       
         top: 0 !important;                
         left: 0 !important;               
         width: 100vw !important;          
@@ -253,7 +251,7 @@ if page == "About":
     st.title("About Protein Whisper")
     st.markdown("""
     **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. 
-     
+      
     It allows researchers to map peptide-level structural alterations directly onto 3D protein structures predicted by AlphaFold.
 
     ### Key Features
@@ -306,15 +304,17 @@ elif page == "Search":
 
     # --- Main Content ---
     if not query:
-        st.markdown("<h2 style='text-align: center; color: #444;'>Structure Viewer</h2>", unsafe_allow_html=True)
+        # UPDATED: Changed color to light teal (#19CFE2)
+        st.markdown("<h2 style='text-align: center; color: #19CFE2;'>Structure Viewer</h2>", unsafe_allow_html=True)
         st.info("Type a C. elegans gene name or UniProt ID in the **sidebar** to explore a protein. Try 'unc-54'.")
         
+        # UPDATED: Changed subtext color to light teal (#19CFE2)
         st.markdown(
             """
             <div style="text-align: center; margin-top: 50px;">
                 <span style="font-size: 50px; color: #19CFE2;">⬅</span>
                 <br>
-                <span style="font-size: 24px; color: #aaa; font-weight: bold;">Start your search in the sidebar</span>
+                <span style="font-size: 24px; color: #19CFE2; font-weight: bold;">Start your search in the sidebar</span>
             </div>
             """, unsafe_allow_html=True)
     else:
