@@ -54,8 +54,8 @@ st.markdown("""
     /* --- 4. CUSTOM NAVBAR --- */
     div[role="radiogroup"] {
         position: fixed !important;        
-        top: 0 !important;                 
-        left: 0 !important;               
+        top: 0 !important;                  
+        left: 0 !important;                
         width: 100vw !important;            
         z-index: 1000000 !important;    
         background-color: #FFFFFF;        
@@ -564,7 +564,8 @@ elif page == "Search":
             uniprot = protein["uniprot_id"]
             gene = protein["gene"]
             
-            st.markdown(f"### Protein: **{gene}** ({uniprot})")
+            # --- UPDATED: CLICKABLE UNIPROT LINK ---
+            st.markdown(f"### Protein: **{gene}** ([{uniprot}](https://www.uniprot.org/uniprot/{uniprot}))")
             
             # --- Filtering ---
             avg_col = f"AvgLog₂({selected_condition}).conformation"
@@ -572,7 +573,6 @@ elif page == "Search":
             prot_all = df[df["uniprot_id"] == uniprot]
             
             # Identify Significant vs Non-Significant
-            # We don't filter out non-significant rows anymore, we keep them all but flag them
             peps = prot_all.copy()
             peps["is_sig"] = (peps[avg_col].abs() >= fc_cutoff) & (peps[pval_col] <= p_cutoff)
             
@@ -594,7 +594,6 @@ elif page == "Search":
 
             if not peps.empty:
                 # Normalization for heatmap (Calculated on significant range usually, or global)
-                # We base maxfc on the significant hits to make colors pop, or global max if none sig
                 fc_vals = peps[avg_col].astype(float)
                 maxfc = float(fc_vals.abs().max())
                 if maxfc == 0: maxfc = 1.0
