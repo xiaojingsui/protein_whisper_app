@@ -320,7 +320,7 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
         const peptides = {js_peptides_json};
         const fcThresh = {fc_cutoff};
         const pThresh = {neg_log_p_thresh};
-        const xLabel = "Log2 ({selected_condition})";
+        const xLabel = "Log<sub>2</sub> ({selected_condition})";
 
         // --- 1. SETUP 3DMOL VIEWER ---
         const viewer = $3Dmol.createViewer("mol-container", {{
@@ -379,7 +379,7 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
                 zeroline: false  // Removes the default x=0 line
             }},
             yaxis: {{
-                title: '-Log10(FDR)',
+                title: '-Log<sub>10</sub>(FDR)',
                 rangemode: 'tozero' // Forces Y-axis to start at 0
             }},
             shapes: [
