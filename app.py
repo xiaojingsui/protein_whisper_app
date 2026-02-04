@@ -56,7 +56,7 @@ st.markdown("""
         position: fixed !important;        
         top: 0 !important;                
         left: 0 !important;               
-        width: 100vw !important;          
+        width: 100vw !important;           
         z-index: 1000000 !important;    
         background-color: #FFFFFF;        
         display: flex !important;
@@ -101,18 +101,19 @@ st.markdown("""
     
     /* Target the buttons inside the sidebar */
     div[data-testid="stSidebar"] .stButton > button {
-        /* Force compact size */
+        /* Force extremely compact size */
         min-height: 0px !important;
         height: auto !important;
-        padding: 2px 8px !important;
-        font-size: 9px !important;
-        border-radius: 8px !important;
-        line-height: 1 !important;       /* Compact text height */
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+        margin-top: 4px !important;
+        border-radius: 12px !important;
+        line-height: 1 !important;
         
         /* Coloring */
-        background-color: #FFFFFF !important;
-        border: 1px solid #CCCCCC !important;
-        color: #555555 !important;
+        background-color: #f0f2f6 !important;
+        border: 1px solid #d0d4db !important;
+        color: #31333F !important;
         box-shadow: none !important;
     }
 
@@ -125,16 +126,17 @@ st.markdown("""
     
     /* Target the text inside the button specifically */
     div[data-testid="stSidebar"] .stButton > button p {
-        font-size: 9px !important;
+        font-size: 11px !important;
         padding: 0px !important;
     }
 
     /* The "Examples:" Label */
     .example-label {
-        margin-top: 6px !important;      /* Slight alignment tweak */
+        margin-top: 8px !important;      /* Vertical alignment tweak */
         font-size: 12px !important;      
         color: #666 !important;
         font-weight: 600 !important;
+        text-align: right !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -309,17 +311,15 @@ elif page == "Search":
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
         # 2. Inline Examples (COMPACT)
-        # Adjusted ratio to keep buttons closer to the label
-        c1, c2, c3 = st.columns([0.25, 0.30, 0.45], gap="small")
+        # Ratio adjusted to keep buttons tight to the label
+        c1, c2, c3 = st.columns([0.22, 0.25, 0.25], gap="small")
         
         with c1:
             st.markdown('<p class="example-label">Examples:</p>', unsafe_allow_html=True)
         with c2:
-            # Change use_container_width to False so button shrinks to text size
-            st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=False)
+            st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=True)
         with c3:
-            # Change use_container_width to False so button shrinks to text size
-            st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=False)
+            st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=True)
         
         # Spacer
         st.write("") 
