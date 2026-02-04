@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
-import py3Dmol
 import requests
 import re
 import streamlit.components.v1 as components
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import json
 
 # ============================================================
 # Page Configuration
@@ -97,51 +97,34 @@ st.markdown("""
         background-color: transparent !important;
     }
 
-    /* --- 5. LOGO STYLING (NEW) --- */
+    /* --- 5. LOGO STYLING --- */
     .logo-text {
         position: fixed;
-        top: 12px; /* Aligns with the navbar vertical center */
+        top: 12px;
         left: 25px;
         font-size: 22px;
         font-weight: bold;
-        color: #445550; /* Matches navbar text color */
-        z-index: 1000002; /* Sits on top of header/navbar */
+        color: #445550;
+        z-index: 1000002;
         font-family: Arial, Helvetica, sans-serif;
-        pointer-events: none; /* Ensures it is just a visual label, not clickable */
+        pointer-events: none;
     }
 
-    /* --- 6. TEXT-ONLY LINK BUTTONS (REVISED) --- */
-    
-    /* Target buttons specifically within the Sidebar */
+    /* --- 6. TEXT-ONLY LINK BUTTONS --- */
     div[data-testid="stSidebar"] .stButton > button {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        color: #006064 !important; /* Teal link color */
+        color: #006064 !important;
         text-decoration: underline !important;
         padding: 0px !important;
-        width: auto !important;
-        height: auto !important;
-        min-height: 0px !important;
-        margin-top: 5px !important; /* Vertical alignment with the label */
-        line-height: 1.2 !important;
-        font-weight: normal !important;
-        display: inline-block !important;
     }
 
-    /* Adjust font size inside the button */
-    div[data-testid="stSidebar"] .stButton > button * {
-        font-size: 14px !important;      
-    }
-
-    /* Hover State */
     div[data-testid="stSidebar"] .stButton > button:hover {
-        color: #19CFE2 !important;     /* Lighter teal on hover */
-        text-decoration: none !important; /* Remove underline on hover */
-        background-color: transparent !important;
+        color: #19CFE2 !important;     
+        text-decoration: none !important;
     }
     
-    /* Active/Focus State - Remove annoying red border/outline */
     div[data-testid="stSidebar"] .stButton > button:focus,
     div[data-testid="stSidebar"] .stButton > button:active {
         border: none !important;
@@ -149,16 +132,6 @@ st.markdown("""
         outline: none !important;
         color: #006064 !important;
         background-color: transparent !important;
-    }
-
-    /* Label Alignment Helper */
-    .example-label {
-        margin-top: 5px !important; 
-        font-size: 14px !important;        
-        color: #666 !important;
-        font-weight: 600 !important;
-        margin-right: 5px !important;
-        white-space: nowrap !important; /* Prevent label wrapping */
     }
     </style>
 """, unsafe_allow_html=True)
@@ -260,32 +233,237 @@ def download_structure(uniprot):
 
     return res.text, model_url, file_format, None
 
-def render_structure(structure_text, segments, file_format, plddt_coloring):
-    view = py3Dmol.view(width=900, height=650)
-    view.addModel(structure_text, file_format)
+# ============================================================
+# NEW: INTERACTIVE COMBINED VIEWER (Structure + Volcano)
+# ============================================================
+def render_interactive_dashboard(pdb_content, file_format, peptides_df):
+    """
+    Creates a single HTML/JS component linking 3Dmol.js (structure) and Plotly.js (volcano).
+    """
+    
+    # 1. Prepare Peptide Data for JavaScript
+    # We create a list of dicts: {index, start, end, x, y, color, seq}
+    js_peptides = []
+    
+    # Normalize PDB content for JS injection (escape backticks)
+    pdb_clean = json.dumps(pdb_content) 
+    
+    # Create colors for the plot
+    # We'll use a simple logic here: Grey for non-sig (handled by filters), 
+    # but we pass the specific color calculated in Python.
+    for i, row in peptides_df.iterrows():
+        js_peptides.append({
+            "index": i,
+            "start": int(row["start"]),
+            "end": int(row["end"]),
+            "x": row["log2fc"],
+            "y": row["neg_log_p"],
+            "color": row["color"],
+            "seq": row["sequence"]
+        })
 
-    if plddt_coloring:
-        view.setStyle(
-            {"cartoon": {
-                "colorscheme": {
-                    "prop": "b",
-                    "gradient": "linear",
-                    "min": 50, "max": 100,
-                    "colors": ["orange", "yellow", "cyan", "blue"]
-                }
+    js_peptides_json = json.dumps(js_peptides)
+
+    # 2. The HTML/JS Template
+    html_code = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <style>
+            .container {{
+                display: flex;
+                flex-direction: row;
+                width: 100%;
+                height: 600px;
+                gap: 20px;
             }}
-        )
-    else:
-        view.setStyle({"cartoon": {"color": "white", "opacity": 0.85}})
+            #mol-container {{
+                width: 60%;
+                height: 100%;
+                border: 1px solid #eee;
+                position: relative;
+            }}
+            #plot-container {{
+                width: 40%;
+                height: 100%;
+                border: 1px solid #eee;
+            }}
+            .tooltip {{
+                position: absolute;
+                background: rgba(0, 0, 0, 0.7);
+                color: white;
+                padding: 5px;
+                border-radius: 4px;
+                pointer-events: none;
+                display: none;
+                z-index: 100;
+                font-family: sans-serif;
+                font-size: 12px;
+            }}
+        </style>
+    </head>
+    <body>
 
-    for seg in segments:
-        view.addStyle(
-            {"resi": list(range(seg["start"], seg["end"] + 1))},
-            {"cartoon": {"color": seg["color"], "opacity": 1.0}}
-        )
+    <div class="container">
+        <div id="mol-container"></div>
+        <div id="plot-container"></div>
+    </div>
+    <div id="tooltip" class="tooltip"></div>
 
-    view.zoomTo()
-    return view
+    <script>
+        // --- DATA INJECTION ---
+        const pdbData = {pdb_clean};
+        const fileFormat = "{file_format}";
+        const peptides = {js_peptides_json};
+
+        // --- 1. SETUP 3DMOL VIEWER ---
+        const viewer = $3Dmol.createViewer("mol-container", {{
+            defaultcolors: $3Dmol.rasmolElementColors
+        }});
+        
+        viewer.addModel(pdbData, fileFormat);
+        
+        // Base Style: Transparent White Cartoon
+        viewer.setStyle({{}}, {{cartoon: {{color: 'white', opacity: 0.6}}}});
+        
+        // Apply Peptide Colors
+        peptides.forEach(p => {{
+            viewer.addStyle({{resi: splitRange(p.start, p.end)}}, {{cartoon: {{color: p.color, opacity: 1.0}}}});
+        }});
+
+        viewer.zoomTo();
+        viewer.render();
+
+        // Helper to handle range lists for 3Dmol
+        function splitRange(start, end) {{
+            let arr = [];
+            for (let i = start; i <= end; i++) arr.push(i);
+            return arr;
+        }}
+
+        // --- 2. SETUP PLOTLY VOLCANO ---
+        const xVals = peptides.map(p => p.x);
+        const yVals = peptides.map(p => p.y);
+        const colors = peptides.map(p => p.color);
+        const hoverText = peptides.map(p => `Seq: ${{p.seq}}<br>Start: ${{p.start}}<br>End: ${{p.end}}`);
+
+        const trace = {{
+            x: xVals,
+            y: yVals,
+            mode: 'markers',
+            type: 'scatter',
+            text: hoverText,
+            marker: {{
+                size: 10,
+                color: colors,
+                line: {{color: 'black', width: 1}}
+            }},
+            hoverinfo: 'text+x+y'
+        }};
+
+        const layout = {{
+            title: 'Volcano Plot',
+            hovermode: 'closest',
+            margin: {{t: 40, l: 50, r: 20, b: 40}},
+            xaxis: {{title: 'Log2FC'}},
+            yaxis: {{title: '-Log10(P)'}}
+        }};
+
+        Plotly.newPlot('plot-container', [trace], layout);
+
+        // --- 3. INTERACTION: PLOT -> STRUCTURE ---
+        const plotDiv = document.getElementById('plot-container');
+
+        plotDiv.on('plotly_hover', function(data){{
+            const pt = data.points[0];
+            const idx = pt.pointIndex; // Index in our peptides array
+            const pep = peptides[idx];
+
+            // Highlight in 3D
+            // 1. Add a temporary highlight style (Thicker, brighter)
+            viewer.addStyle({{resi: splitRange(pep.start, pep.end)}}, 
+                {{cartoon: {{color: '#FFFF00', thickness: 1.0, opacity: 1.0}}}}
+            );
+            viewer.render();
+        }});
+
+        plotDiv.on('plotly_unhover', function(data){{
+            // Reset Styles
+            viewer.setStyle({{}}, {{cartoon: {{color: 'white', opacity: 0.6}}}});
+            peptides.forEach(p => {{
+                viewer.addStyle({{resi: splitRange(p.start, p.end)}}, {{cartoon: {{color: p.color, opacity: 1.0}}}});
+            }});
+            viewer.render();
+        }});
+
+        // --- 4. INTERACTION: STRUCTURE -> PLOT ---
+        // We use setHoverable to detect mouse over residues
+        
+        // This is tricky because atoms are many, points are few.
+        // Logic: When hovering an atom, find if it belongs to any peptide range.
+        
+        let lastHoveredIdx = -1;
+
+        viewer.setHoverable({{}}, true, function(atom, viewer, event, container) {{
+            if(!atom) return;
+            
+            // Find which peptide contains this residue
+            let foundIdx = -1;
+            for(let i=0; i<peptides.length; i++) {{
+                if(atom.resi >= peptides[i].start && atom.resi <= peptides[i].end) {{
+                    foundIdx = i;
+                    break;
+                }}
+            }}
+
+            if (foundIdx !== -1 && foundIdx !== lastHoveredIdx) {{
+                lastHoveredIdx = foundIdx;
+                
+                // Highlight Plot Point
+                // We use Plotly.restyle to change the color/size of the specific point
+                
+                // Construct new color/size arrays
+                const newColors = [...colors];
+                const newSizes = Array(peptides.length).fill(10);
+                
+                newColors[foundIdx] = '#FFFF00'; // Yellow highlight
+                newSizes[foundIdx] = 20;         // Bigger size
+
+                Plotly.restyle('plot-container', {{
+                    'marker.color': [newColors],
+                    'marker.size': [newSizes],
+                    'marker.line.width': [Array(peptides.length).fill(1).map((v, i) => i === foundIdx ? 3 : 1)]
+                }});
+                
+                // Show custom tooltip on structure
+                const tooltip = document.getElementById('tooltip');
+                tooltip.style.display = 'block';
+                tooltip.style.left = event.x + 'px';
+                tooltip.style.top = event.y + 'px';
+                tooltip.innerHTML = 'Residue: ' + atom.resi + '<br>Seq: ' + peptides[foundIdx].seq;
+            }}
+        }}, function(atom, viewer, event, container) {{
+            // On Leave
+            if (lastHoveredIdx !== -1) {{
+                // Reset Plot
+                Plotly.restyle('plot-container', {{
+                    'marker.color': [colors],
+                    'marker.size': [Array(peptides.length).fill(10)],
+                    'marker.line.width': [Array(peptides.length).fill(1)]
+                }});
+                lastHoveredIdx = -1;
+                document.getElementById('tooltip').style.display = 'none';
+            }}
+        }});
+
+    </script>
+    </body>
+    </html>
+    """
+    return html_code
 
 # ============================================================
 # NAVIGATION CONTROLLER
@@ -310,175 +488,4 @@ if page == "About":
     
     st.title("About Protein Whisper")
     st.markdown("""
-    **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. 
-    It allows researchers to map peptide-level structural alterations directly onto 3D protein structures.
-    """)
-
-elif page == "Guides":
-    with st.sidebar:
-        st.info("Navigate to the **Search** tab to explore proteins.")
-
-    st.title("User Guide")
-    st.markdown("### 1. How to Search")
-    st.info("Click the **Search** tab above to begin.")
-
-elif page == "Search":
-    # --- Sidebar for inputs ---
-    with st.sidebar:
-        st.header("Search Parameters")
-        
-        # Session State Logic - Default to UNC-54
-        if 'search_term' not in st.session_state:
-            st.session_state.search_term = "UNC-54"
-
-        # 1. Search Box
-        query = st.text_input("Search gene or UniProt ID:", key="search_term")
-        
-        # 2. Example Line REMOVED (As requested)
-        st.write("") 
-
-        # 3. Rest of controls
-        selected_condition = st.selectbox("Stress condition:", conditions)
-        
-        with st.expander("Filter Settings", expanded=True):
-            fc_cutoff = st.number_input("Fold-change cutoff (|AvgLog₂|):", value=1.0, min_value=0.0, step=0.1)
-            p_cutoff = st.number_input("AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
-
-        with st.expander("Visualization Settings"):
-            # Swapped list order to make Fold-change heatmap the default
-            color_mode = st.selectbox("Peptide color mode:", ["Fold-change heatmap", "Peptide type (red/cyan)"])
-            plddt_coloring = st.checkbox("Color backbone by AlphaFold pLDDT", value=False)
-
-    # --- Main Content ---
-    if not query:
-        # This block will likely not show on initial load anymore since default is "UNC-54"
-        st.markdown("<h2 style='text-align: center; color: #19CFE2;'>Structure Viewer</h2>", unsafe_allow_html=True)
-        st.info("Type a C. elegans gene name or UniProt ID in the **sidebar** to explore a protein.")
-        st.markdown(
-            """
-            <div style="text-align: center; margin-top: 50px;">
-                <span style="font-size: 50px; color: #19CFE2;">⬅</span>
-                <br>
-                <span style="font-size: 24px; color: #19CFE2; font-weight: bold;">Start your search in the sidebar</span>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        # Search Logic
-        hits = df[
-            df["uniprot_id"].str.contains(query, case=False, na=False)
-            | df["gene"].str.contains(query, case=False, na=False)
-        ]
-
-        if hits.empty:
-            st.error(f"No protein found for '{query}'.")
-        else:
-            protein = hits.iloc[0]
-            uniprot = protein["uniprot_id"]
-            gene = protein["gene"]
-            
-            st.markdown(f"### Protein: **{gene}** ({uniprot})")
-            
-            # --- Filtering ---
-            avg_col = f"AvgLog₂({selected_condition}).conformation"
-            pval_col = f"AdjPval({selected_condition}).conformation"
-            prot_all = df[df["uniprot_id"] == uniprot]
-            peps = prot_all[
-                (prot_all[avg_col].abs() >= fc_cutoff) & (prot_all[pval_col] <= p_cutoff)
-            ]
-
-            if peps.empty:
-                st.warning("No peptides meet filters.")
-            else:
-                st.success(f"{len(peps)} significant peptides found.")
-
-            # --- Segments ---
-            segments = []
-            full_color = "#E1341E"
-            half_color = "#1ECBE1"
-
-            if not peps.empty:
-                # If heatmap mode is active (default), prepare normalization
-                if color_mode == "Fold-change heatmap":
-                    fc_vals = peps[avg_col].astype(float)
-                    maxfc = max(1.0, float(fc_vals.abs().max()))
-                    cmap = plt.get_cmap("coolwarm")
-                    norm = mcolors.TwoSlopeNorm(vmin=-maxfc, vcenter=0, vmax=maxfc)
-
-                for _, row in peps.iterrows():
-                    start, end = row["Start position"], row["End position"]
-                    if pd.isna(start) or pd.isna(end): continue
-                    
-                    if color_mode == "Peptide type (red/cyan)":
-                        color = full_color if row["Peptide type"] == "full" else half_color
-                    else:
-                        fc = float(row[avg_col])
-                        color = mcolors.to_hex(cmap(norm(fc)))
-                    
-                    segments.append({"start": int(start), "end": int(end), "color": color})
-
-            # --- Structure Viewer ---
-            st.markdown("---")
-            structure_text, model_url, file_format, error_msg = download_structure(uniprot)
-
-            if structure_text is None:
-                st.error("No AlphaFold model available.")
-            else:
-                viewer = render_structure(structure_text, segments, file_format, plddt_coloring)
-                components.html(viewer._make_html(), height=650, scrolling=True)
-
-                if color_mode == "Peptide type (red/cyan)":
-                    st.markdown(f"""
-                        <div style="text-align:center;">
-                            <span style="color:{full_color};">● Fully-tryptic</span> &nbsp;&nbsp;
-                            <span style="color:{half_color};">● Semi-tryptic</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                if color_mode == "Fold-change heatmap":
-                      fig_cb, ax_cb = plt.subplots(figsize=(1.5, 0.1))
-                      cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
-                      cb1.set_label("Log2FC", fontsize=6)
-                      cb1.ax.tick_params(labelsize=6)  
-                      st.pyplot(fig_cb, use_container_width=False)
-
-            # --- Plots (Volcano + Abundance) ---
-            st.markdown("---")
-            st.subheader("Conformation & Abundance")
-            
-            x_all = prot_all[avg_col].astype(float)
-            y_all = -np.log10(prot_all[pval_col].astype(float) + 1e-300)
-
-            fig, (ax_volc, ax_abun) = plt.subplots(1, 2, figsize=(10, 4))
-            fig.subplots_adjust(wspace=0.6)
-
-            # Volcano
-            ax_volc.scatter(x_all, y_all, color="lightgrey", alpha=0.5, s=12)
-            if not peps.empty:
-                x_sig = peps[avg_col].astype(float)
-                y_sig = -np.log10(peps[pval_col].astype(float) + 1e-300)
-                ax_volc.scatter(x_sig, y_sig, facecolors="none", edgecolors="black", linewidths=1.5, s=40)
-            ax_volc.set_title("Volcano Plot")
-            ax_volc.set_xlabel("Log2FC")
-            ax_volc.set_ylabel("-log10(P)")
-            
-            # Abundance Bar
-            prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
-            labels = ["Soluble", "Pellet", "Total"]
-            suffix_map = {"Soluble": "soluble", "Pellet": "pellet", "Total": "total"}
-            y_vals, p_vals = [], []
-            for label in labels:
-                suffix = suffix_map[label]
-                ac, pc = f"AvgLog₂({selected_condition}).{suffix}", f"AdjPval({selected_condition}).{suffix}"
-                y_vals.append(float(prot_abun[ac].values[0]) if ac in prot_abun.columns else np.nan)
-                p_vals.append(prot_abun[pc].values[0] if pc in prot_abun.columns else None)
-            
-            x_pos = np.arange(3)
-            ax_abun.bar(x_pos, np.nan_to_num(y_vals), fill=False, edgecolor="black")
-            ax_abun.set_xticks(x_pos)
-            ax_abun.set_xticklabels(labels)
-            ax_abun.set_title("Abundance")
-            
-            st.pyplot(fig)
-            
-            st.subheader("Peptide Data")
-            st.dataframe(peps[["Peptide sequence", avg_col, pval_col]])
+    **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis
