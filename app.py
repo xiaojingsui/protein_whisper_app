@@ -309,26 +309,14 @@ elif page == "Search":
     with st.sidebar:
         st.header("Search Parameters")
         
-        # Session State Logic
+        # Session State Logic - Default to UNC-54
         if 'search_term' not in st.session_state:
-            st.session_state.search_term = ""
-
-        def set_search(term):
-            st.session_state.search_term = term
+            st.session_state.search_term = "UNC-54"
 
         # 1. Search Box
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
-        # 2. Inline Examples (Text Links)
-        # CHANGED: Adjusted columns to [0.35, 0.05, 0.60] to prevent label wrapping and move button right
-        c1, c_space, c2 = st.columns([0.35, 0.05, 0.60], gap="small")
-        
-        with c1:
-            st.markdown('<p class="example-label">Example:</p>', unsafe_allow_html=True)
-        with c2:
-            st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=False)
-        
-        # Spacer
+        # 2. Example Line REMOVED (As requested)
         st.write("") 
 
         # 3. Rest of controls
@@ -339,11 +327,13 @@ elif page == "Search":
             p_cutoff = st.number_input("AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
 
         with st.expander("Visualization Settings"):
-            color_mode = st.selectbox("Peptide color mode:", ["Peptide type (red/cyan)", "Fold-change heatmap"])
+            # Swapped list order to make Fold-change heatmap the default
+            color_mode = st.selectbox("Peptide color mode:", ["Fold-change heatmap", "Peptide type (red/cyan)"])
             plddt_coloring = st.checkbox("Color backbone by AlphaFold pLDDT", value=False)
 
     # --- Main Content ---
     if not query:
+        # This block will likely not show on initial load anymore since default is "UNC-54"
         st.markdown("<h2 style='text-align: center; color: #19CFE2;'>Structure Viewer</h2>", unsafe_allow_html=True)
         st.info("Type a C. elegans gene name or UniProt ID in the **sidebar** to explore a protein.")
         st.markdown(
@@ -389,6 +379,7 @@ elif page == "Search":
             half_color = "#1ECBE1"
 
             if not peps.empty:
+                # If heatmap mode is active (default), prepare normalization
                 if color_mode == "Fold-change heatmap":
                     fc_vals = peps[avg_col].astype(float)
                     maxfc = max(1.0, float(fc_vals.abs().max()))
