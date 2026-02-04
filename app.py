@@ -99,42 +99,38 @@ st.markdown("""
 
     /* --- 5. SEARCH EXAMPLE CHIPS (FIXED & COMPACT) --- */
     
-    /* 1. Target the button element directly */
+    /* Target buttons inside the sidebar specifically */
     div[data-testid="stSidebar"] .stButton > button {
-        border-radius: 20px !important;
-        border: 1px solid #CCCCCC !important;
+        /* Force the button to be small and compact */
+        width: auto !important;
+        min-height: 0px !important;
+        height: auto !important;
+        padding: 4px 12px !important;
+        font-size: 14px !important;
+        border-radius: 15px !important;
+        line-height: 1.2 !important;
+        
+        /* Cosmetic styling */
         background-color: #FFFFFF !important;
+        border: 1px solid #CCCCCC !important;
         color: #555555 !important;
-        
-        /* Typography & Layout Forces */
-        font-size: 12px !important;      /* Force font size */
-        padding: 4px 10px !important;    /* Force padding */
-        min-height: 0px !important;      /* Remove minimum height constraints */
-        height: auto !important;         /* Auto height */
-        line-height: 1.2 !important;     /* Tighter line height */
-        white-space: nowrap !important;  /* CRITICAL: Prevents "UNC-54" from wrapping */
-        
         transition: all 0.2s;
     }
 
-    /* 2. Target the paragraph INSIDE the button (Streamlit often puts text in <p>) */
-    div[data-testid="stSidebar"] .stButton > button p {
-        font-size: 12px !important;      /* Ensure inner text matches button size */
-    }
-
-    /* 3. Hover Effects */
+    /* Hover effect */
     div[data-testid="stSidebar"] .stButton > button:hover {
         border-color: #19CFE2 !important;
         color: #19CFE2 !important;
         background-color: #F0FBFC !important;
     }
-    
-    /* 4. The "Examples:" Label Styling */
+
+    /* The "Examples:" Label Styling */
     .example-label {
-        margin-top: 8px !important;      /* Align vertically with buttons */
-        font-size: 12px !important;      /* Match button font size */
-        color: #666 !important;
+        margin-top: 6px !important;      /* Pushes text down to align with button center */
+        font-size: 14px !important;      /* Matches button font size */
+        color: #555 !important;
         font-weight: 600 !important;
+        text-align: right;               /* Aligns text near the buttons */
     }
     </style>
 """, unsafe_allow_html=True)
@@ -308,13 +304,12 @@ elif page == "Search":
         # 1. Search Box
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
-        # 2. Inline Examples (UPDATED LAYOUT)
-        # Using columns to put "Examples:" label and buttons on the same line
-        # [0.25, 0.35, 0.35] ratio keeps them tight
-        # ADJUSTED RATIOS: Give the first column slightly more space
-        c1, c2, c3 = st.columns([0.30, 0.35, 0.35], gap="small")
+        # 2. Inline Examples (COMPACT LAYOUT)
+        # We use columns to place the text and buttons on the same row
+        c1, c2, c3 = st.columns([0.25, 0.30, 0.30])
         
         with c1:
+            # Custom HTML for the label to allow precise CSS alignment
             st.markdown('<p class="example-label">Examples:</p>', unsafe_allow_html=True)
         with c2:
             st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=True)
