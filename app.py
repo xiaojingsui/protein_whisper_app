@@ -104,9 +104,9 @@ st.markdown("""
         /* Force compact size */
         min-height: 0px !important;
         height: auto !important;
-        padding: 4px 12px !important;    /* Reduced padding */
-        font-size: 10px !important;      /* Smaller font */
-        border-radius: 10px !important;  /* Tighter corners */
+        padding: 2px 8px !important;
+        font-size: 9px !important;
+        border-radius: 8px !important;
         line-height: 1 !important;       /* Compact text height */
         
         /* Coloring */
@@ -125,7 +125,7 @@ st.markdown("""
     
     /* Target the text inside the button specifically */
     div[data-testid="stSidebar"] .stButton > button p {
-        font-size: 10px !important;
+        font-size: 9px !important;
         padding: 0px !important;
     }
 
