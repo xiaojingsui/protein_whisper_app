@@ -145,6 +145,7 @@ st.markdown("""
         color: #666 !important;
         font-weight: 600 !important;
         margin-right: 5px !important;
+        white-space: nowrap !important; /* Prevent label wrapping */
     }
     </style>
 """, unsafe_allow_html=True)
@@ -319,8 +320,8 @@ elif page == "Search":
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
         # 2. Inline Examples (Text Links)
-        # CHANGED: Reduced to 2 columns and removed VIT-6 button
-        c1, c2 = st.columns([0.25, 0.75], gap="small")
+        # CHANGED: Adjusted columns to [0.35, 0.05, 0.60] to prevent label wrapping and move button right
+        c1, c_space, c2 = st.columns([0.35, 0.05, 0.60], gap="small")
         
         with c1:
             st.markdown('<p class="example-label">Example:</p>', unsafe_allow_html=True)
