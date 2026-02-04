@@ -103,7 +103,7 @@ st.markdown("""
         border: 1px solid #CCCCCC;
         background-color: #FFFFFF;
         color: #555555;
-        font-size: 12px;        /* Smaller font */
+        font-size: 8px;        /* Smaller font */
         padding: 2px 10px;      /* Tighter padding */
         min-height: 0px;        /* Allow button to be short */
         height: auto;
