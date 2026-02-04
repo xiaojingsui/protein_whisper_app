@@ -319,15 +319,13 @@ elif page == "Search":
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
         # 2. Inline Examples (Text Links)
-        # Using tight columns so the "text links" sit next to the label
-        c1, c2, c3 = st.columns([0.25, 0.25, 0.50], gap="small")
+        # CHANGED: Reduced to 2 columns and removed VIT-6 button
+        c1, c2 = st.columns([0.25, 0.75], gap="small")
         
         with c1:
-            st.markdown('<p class="example-label">Examples:</p>', unsafe_allow_html=True)
+            st.markdown('<p class="example-label">Example:</p>', unsafe_allow_html=True)
         with c2:
             st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=False)
-        with c3:
-            st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=False)
         
         # Spacer
         st.write("") 
