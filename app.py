@@ -14,7 +14,7 @@ import matplotlib.colors as mcolors
 st.set_page_config(
     page_title="Protein Whisper",
     layout="wide",
-    initial_sidebar_state="expanded"  # <--- CRITICAL: Ensures sidebar is open on load
+    initial_sidebar_state="expanded"  # This requests it to be open, but the CSS below ensures the button is visible
 )
 
 # ============================================================
@@ -30,14 +30,29 @@ st.markdown("""
     
     /* Remove standard top padding so the navbar sits at the very top */
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 5rem !important; /* Increased padding so content doesn't hide behind navbar */
         padding-bottom: 5rem !important;
     }
 
-    /* Hide standard Streamlit header elements */
-    [data-testid="stHeader"] { display: none !important; }
-    #MainMenu { visibility: hidden; }
-    footer { visibility: hidden; }
+    /* --- HEADER & SIDEBAR TOGGLE FIX --- */
+    /* We do NOT display:none the header, otherwise the sidebar arrow is gone. 
+       Instead, we make it transparent and place it ABOVE the navbar. */
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+        z-index: 1000000 !important; /* Ensure it sits on top of the custom navbar */
+        height: 3.75rem !important; /* Standard height */
+    }
+    
+    /* Hide the colorful decoration line at the top */
+    [data-testid="stDecoration"] {
+        display: none;
+    }
+
+    /* Optional: Hide the "Deploy" button and "Running" animation if you want a cleaner look,
+       but keep the sidebar toggle (first child) visible */
+    [data-testid="stHeader"] > div:last-child {
+        display: none !important; /* Hides the right-side menu (Deploy/Settings) */
+    }
 
     /* --- CUSTOM NAVBAR (STYLING THE RADIO BUTTON) --- */
     div[role="radiogroup"] {
@@ -220,14 +235,14 @@ page = st.radio(
 )
 
 # SPACER for fixed navbar
-st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height: 50px;"></div>', unsafe_allow_html=True)
 
 # ============================================================
 # PAGE CONTENT
 # ============================================================
 
 if page == "About":
-    # --- Sidebar Placeholder (Keeps sidebar from collapsing) ---
+    # Sidebar Placeholders to keep it from collapsing
     with st.sidebar:
         st.info("Navigate to the **Search** tab to explore proteins.")
     
@@ -244,7 +259,6 @@ if page == "About":
     """)
 
 elif page == "Guides":
-    # --- Sidebar Placeholder (Keeps sidebar from collapsing) ---
     with st.sidebar:
         st.info("Navigate to the **Search** tab to explore proteins.")
 
