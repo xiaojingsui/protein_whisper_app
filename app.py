@@ -488,4 +488,161 @@ if page == "About":
     
     st.title("About Protein Whisper")
     st.markdown("""
-    **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis
+    **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. 
+    It allows researchers to map peptide-level structural alterations directly onto 3D protein structures.
+    """)
+
+elif page == "Guides":
+    with st.sidebar:
+        st.info("Navigate to the **Search** tab to explore proteins.")
+
+    st.title("User Guide")
+    st.markdown("### 1. How to Search")
+    st.info("Click the **Search** tab above to begin.")
+
+elif page == "Search":
+    # --- Sidebar for inputs ---
+    with st.sidebar:
+        st.header("Search Parameters")
+        
+        # Session State Logic - Default to UNC-54
+        if 'search_term' not in st.session_state:
+            st.session_state.search_term = "UNC-54"
+
+        # 1. Search Box
+        query = st.text_input("Search gene or UniProt ID:", key="search_term")
+        st.write("") 
+
+        # 3. Rest of controls
+        selected_condition = st.selectbox("Stress condition:", conditions)
+        
+        with st.expander("Filter Settings", expanded=True):
+            fc_cutoff = st.number_input("Fold-change cutoff (|AvgLog₂|):", value=1.0, min_value=0.0, step=0.1)
+            p_cutoff = st.number_input("AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
+
+        with st.expander("Visualization Settings"):
+            color_mode = st.selectbox("Peptide color mode:", ["Fold-change heatmap", "Peptide type (red/cyan)"])
+            # Note: PLDDT coloring removed from logic to simplify the custom JS viewer, 
+            # defaulting to transparent white backbone to emphasize peptides.
+
+    # --- Main Content ---
+    if not query:
+        st.markdown("<h2 style='text-align: center; color: #19CFE2;'>Structure Viewer</h2>", unsafe_allow_html=True)
+        st.info("Type a C. elegans gene name or UniProt ID in the **sidebar** to explore a protein.")
+    else:
+        # Search Logic
+        hits = df[
+            df["uniprot_id"].str.contains(query, case=False, na=False)
+            | df["gene"].str.contains(query, case=False, na=False)
+        ]
+
+        if hits.empty:
+            st.error(f"No protein found for '{query}'.")
+        else:
+            protein = hits.iloc[0]
+            uniprot = protein["uniprot_id"]
+            gene = protein["gene"]
+            
+            st.markdown(f"### Protein: **{gene}** ({uniprot})")
+            
+            # --- Filtering ---
+            avg_col = f"AvgLog₂({selected_condition}).conformation"
+            pval_col = f"AdjPval({selected_condition}).conformation"
+            prot_all = df[df["uniprot_id"] == uniprot]
+            
+            # Apply filters
+            peps = prot_all[
+                (prot_all[avg_col].abs() >= fc_cutoff) & (prot_all[pval_col] <= p_cutoff)
+            ]
+
+            if peps.empty:
+                st.warning("No peptides meet filters.")
+            else:
+                st.success(f"{len(peps)} significant peptides found.")
+
+            # --- Prepare Data for Visualization ---
+            viz_data = []
+            full_color = "#E1341E"
+            half_color = "#1ECBE1"
+
+            if not peps.empty:
+                # Normalization for heatmap
+                fc_vals = peps[avg_col].astype(float)
+                maxfc = max(1.0, float(fc_vals.abs().max()))
+                cmap = plt.get_cmap("coolwarm")
+                norm = mcolors.TwoSlopeNorm(vmin=-maxfc, vcenter=0, vmax=maxfc)
+
+                for _, row in peps.iterrows():
+                    start, end = row["Start position"], row["End position"]
+                    if pd.isna(start) or pd.isna(end): continue
+                    
+                    fc = float(row[avg_col])
+                    pval = float(row[pval_col])
+                    seq = row["Peptide sequence"]
+
+                    if color_mode == "Peptide type (red/cyan)":
+                        color = full_color if row["Peptide type"] == "full" else half_color
+                    else:
+                        color = mcolors.to_hex(cmap(norm(fc)))
+                    
+                    viz_data.append({
+                        "start": start, 
+                        "end": end, 
+                        "color": color, 
+                        "log2fc": fc,
+                        "neg_log_p": -np.log10(pval + 1e-300),
+                        "sequence": seq
+                    })
+            
+            viz_df = pd.DataFrame(viz_data)
+
+            # --- Download Structure ---
+            st.markdown("---")
+            structure_text, model_url, file_format, error_msg = download_structure(uniprot)
+
+            if structure_text is None:
+                st.error("No AlphaFold model available.")
+            elif viz_df.empty:
+                st.warning("Structure available, but no peptides to map.")
+            else:
+                # --- RENDER INTERACTIVE DASHBOARD ---
+                html_view = render_interactive_dashboard(structure_text, file_format, viz_df)
+                components.html(html_view, height=650)
+                
+                # Legend for Colors
+                if color_mode == "Fold-change heatmap":
+                     fig_cb, ax_cb = plt.subplots(figsize=(4, 0.3))
+                     cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
+                     cb1.set_label("Log2FC")
+                     st.pyplot(fig_cb, use_container_width=False)
+                
+                st.info("💡 **Interactive:** Hover over a dot on the volcano plot to see it on the structure, or hover over the structure to highlight the dot.")
+
+            # --- Abundance Plot (Kept Separate below) ---
+            st.subheader("Protein Abundance")
+            prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
+            
+            if not prot_abun.empty:
+                labels = ["Soluble", "Pellet", "Total"]
+                suffix_map = {"Soluble": "soluble", "Pellet": "pellet", "Total": "total"}
+                y_vals = []
+                for label in labels:
+                    suffix = suffix_map[label]
+                    ac = f"AvgLog₂({selected_condition}).{suffix}"
+                    y_vals.append(float(prot_abun[ac].values[0]) if ac in prot_abun.columns else 0)
+                
+                fig_abun, ax_abun = plt.subplots(figsize=(6, 3))
+                x_pos = np.arange(3)
+                ax_abun.bar(x_pos, y_vals, fill=False, edgecolor="black", width=0.6)
+                ax_abun.axhline(0, color='grey', linewidth=0.8)
+                ax_abun.set_xticks(x_pos)
+                ax_abun.set_xticklabels(labels)
+                ax_abun.set_ylabel("Log2 Fold Change")
+                st.pyplot(fig_abun)
+            else:
+                st.write("No abundance data available.")
+
+            st.markdown("---")
+            st.subheader("Peptide Data")
+            if not peps.empty:
+                st.dataframe(peps[["Peptide sequence", "Start position", "End position", avg_col, pval_col]])
