@@ -150,17 +150,18 @@ def load_table():
         df = pd.read_excel("Table_S1A.xlsx", header=3)
         df["uniprot_id"] = df["Protein ID"].astype(str).str.split("|").str[1].str.strip()
         
-        # --- CHANGE 1: Force Uppercase for Gene Symbol (unc-54 -> UNC-54) ---
+        # Force Uppercase for Gene Symbol
         df["gene"] = df["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip().str.upper()
         
-        # --- CHANGE 2: Try to extract Protein Name/Description ---
-        # We look for common column names for protein descriptions
+        # --- CLEANING DESCRIPTION LOGIC ---
+        # We split by " OS=" to remove the organism and metadata strings 
+        # (e.g., "Myosin-4 OS=Caenorhabditis..." becomes "Myosin-4")
         if "Protein names" in df.columns:
-            df["desc"] = df["Protein names"].astype(str).str.split(";").str[0] # Take first name if multiple
+            df["desc"] = df["Protein names"].astype(str).str.split(";").str[0].str.split(" OS=").str[0].str.strip()
         elif "Description" in df.columns:
-            df["desc"] = df["Description"].astype(str)
+            df["desc"] = df["Description"].astype(str).str.split(" OS=").str[0].str.strip()
         else:
-            df["desc"] = "" # Fallback if no description column
+            df["desc"] = ""
             
         return df
     except FileNotFoundError:
@@ -574,13 +575,12 @@ elif page == "Search":
         else:
             protein = hits.iloc[0]
             uniprot = protein["uniprot_id"]
-            gene = protein["gene"] # Now guaranteed uppercase from load_table
+            gene = protein["gene"]
             
             # Retrieve Description safely
             desc = protein["desc"] if "desc" in protein else ""
             
-            # --- UPDATED: Header with Uppercase Gene and Description ---
-            # Shows: "Protein: GENE (Description) (UniProtID)"
+            # --- Header Display ---
             if desc:
                 st.markdown(f"### Protein: **{gene}** ({desc}) ([{uniprot}](https://www.uniprot.org/uniprot/{uniprot}))")
             else:
