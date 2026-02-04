@@ -14,7 +14,7 @@ import matplotlib.colors as mcolors
 st.set_page_config(
     page_title="Protein Whisper",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"  # <--- CHANGED TO EXPANDED SO SEARCH IS VISIBLE
 )
 
 # ============================================================
@@ -23,7 +23,6 @@ st.set_page_config(
 st.markdown("""
     <style>
     /* --- GLOBAL FONTS & MAIN CONTAINER --- */
-    /* Force Arial on everything in the app */
     html, body, [data-testid="stAppViewContainer"], .stApp, p, h1, h2, h3, h4, h5, h6, span, div {
         font-family: Arial, Helvetica, sans-serif !important;
         background-color: #FBFEFF;
@@ -85,8 +84,6 @@ st.markdown("""
         color: #006064 !important;
     }
     
-    /* Highlight the selected item (Streamlit usually wraps selected text in a generic span, 
-       but we can approximate focus/active states or just rely on the UI feedback) */
     div[role="radiogroup"] label[data-testid="stRadioOption"] {
         background-color: transparent !important;
     }
@@ -215,7 +212,6 @@ def render_structure(structure_text, segments, file_format, plddt_coloring):
 # ============================================================
 # NAVIGATION CONTROLLER
 # ============================================================
-# Use a horizontal radio button, hidden labels, and CSS to make it look like a navbar
 page = st.radio(
     "Main Navigation", 
     ["Search", "About", "Guides"], 
@@ -223,13 +219,13 @@ page = st.radio(
     label_visibility="collapsed"
 )
 
-# SPACER: Because the navbar is fixed (position: fixed), it sits ON TOP of the content.
-# We need to push the content down so it doesn't hide behind the navbar.
+# SPACER for fixed navbar
 st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
 
 # ============================================================
-# PAGE: ABOUT
+# PAGE CONTENT
 # ============================================================
+
 if page == "About":
     st.title("About Protein Whisper")
     st.markdown("""
@@ -241,17 +237,10 @@ if page == "About":
     * **Structure Mapping:** Visualizes peptides that undergo significant structural changes.
     * **Dual-Layer Data:** Integrates conformational data with protein solubility and total abundance.
     * **AlphaFold Integration:** Automatically fetches predicted structures from the EBI AlphaFold database.
-    
-    ### Data Source
-    This tool utilizes data from **Table S1A**, containing LiP-MS peptide intensity data.
     """)
 
-# ============================================================
-# PAGE: GUIDES
-# ============================================================
 elif page == "Guides":
     st.title("User Guide")
-    
     st.markdown("### 1. How to Search")
     st.info("Click the **Search** tab above to begin.")
     st.markdown("""
@@ -259,7 +248,6 @@ elif page == "Guides":
     2.  **Condition:** Select the stress condition you wish to compare.
     3.  **Filters:** Adjust the Fold-Change and P-value cutoffs.
     """)
-
     st.markdown("### 2. Visualization")
     st.markdown("""
     * **3D Viewer:** Backbone is white; **Red** = fully-tryptic, **Cyan** = semi-tryptic (structural change).
@@ -267,42 +255,33 @@ elif page == "Guides":
     * **Abundance Plot:** Displays Soluble vs. Pellet vs. Total abundance.
     """)
 
-# ============================================================
-# PAGE: SEARCH
-# ============================================================
 elif page == "Search":
-    # --- Sidebar for inputs (Only visible on Search page) ---
-    st.sidebar.header("Search Parameters")
-    query = st.sidebar.text_input("Search gene or UniProt ID:", "")
-    selected_condition = st.sidebar.selectbox("Stress condition:", conditions)
-    
-    with st.sidebar.expander("Filter Settings", expanded=True):
-        fc_cutoff = st.number_input(
-            "Fold-change cutoff (|AvgLog₂|):", value=1.0, min_value=0.0, max_value=10.0, step=0.1)
-        p_cutoff = st.number_input(
-            "AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
+    # --- Sidebar for inputs (This will now be visible by default) ---
+    with st.sidebar:
+        st.header("Search Parameters")
+        query = st.text_input("Search gene or UniProt ID:", "")
+        selected_condition = st.selectbox("Stress condition:", conditions)
+        
+        with st.expander("Filter Settings", expanded=True):
+            fc_cutoff = st.number_input(
+                "Fold-change cutoff (|AvgLog₂|):", value=1.0, min_value=0.0, max_value=10.0, step=0.1)
+            p_cutoff = st.number_input(
+                "AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
 
-    with st.sidebar.expander("Visualization Settings"):
-        color_mode = st.selectbox(
-            "Peptide color mode:",
-            ["Peptide type (red/cyan)", "Fold-change heatmap"]
-        )
-        plddt_coloring = st.checkbox(
-            "Color backbone by AlphaFold pLDDT", value=False
-        )
+        with st.expander("Visualization Settings"):
+            color_mode = st.selectbox(
+                "Peptide color mode:",
+                ["Peptide type (red/cyan)", "Fold-change heatmap"]
+            )
+            plddt_coloring = st.checkbox(
+                "Color backbone by AlphaFold pLDDT", value=False
+            )
 
     # --- Main Content ---
     if not query:
         st.markdown("<h2 style='text-align: center; color: #444;'>Structure Viewer</h2>", unsafe_allow_html=True)
-        st.markdown(
-        """
-        <style>
-        .stAlert { background-color: #e0faff !important; border: 1px solid #19CFE2 !important; border-radius: 8px; }
-        </style>
-        """, unsafe_allow_html=True)
-
         st.info("Type a C. elegans gene name or UniProt ID in the **sidebar** to explore a protein. Try 'unc-54'.")
-
+        
         st.markdown(
             """
             <div style="text-align: center; margin-top: 50px;">
@@ -381,13 +360,13 @@ elif page == "Search":
                             <span style="color:{half_color};">● Semi-tryptic</span>
                         </div>
                         """, unsafe_allow_html=True)
-
+                
                 if color_mode == "Fold-change heatmap":
-                    fig_cb, ax_cb = plt.subplots(figsize=(1.5, 0.1))
-                    cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
-                    cb1.set_label("Log2FC", fontsize=6)
-                    cb1.ax.tick_params(labelsize=6)  
-                    st.pyplot(fig_cb, use_container_width=False)
+                     fig_cb, ax_cb = plt.subplots(figsize=(1.5, 0.1))
+                     cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
+                     cb1.set_label("Log2FC", fontsize=6)
+                     cb1.ax.tick_params(labelsize=6)  
+                     st.pyplot(fig_cb, use_container_width=False)
 
             # --- Plots (Volcano + Abundance) ---
             st.markdown("---")
