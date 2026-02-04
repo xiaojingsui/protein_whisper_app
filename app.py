@@ -149,7 +149,19 @@ def load_table():
     try:
         df = pd.read_excel("Table_S1A.xlsx", header=3)
         df["uniprot_id"] = df["Protein ID"].astype(str).str.split("|").str[1].str.strip()
-        df["gene"] = df["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip()
+        
+        # --- CHANGE 1: Force Uppercase for Gene Symbol (unc-54 -> UNC-54) ---
+        df["gene"] = df["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip().str.upper()
+        
+        # --- CHANGE 2: Try to extract Protein Name/Description ---
+        # We look for common column names for protein descriptions
+        if "Protein names" in df.columns:
+            df["desc"] = df["Protein names"].astype(str).str.split(";").str[0] # Take first name if multiple
+        elif "Description" in df.columns:
+            df["desc"] = df["Description"].astype(str)
+        else:
+            df["desc"] = "" # Fallback if no description column
+            
         return df
     except FileNotFoundError:
         return pd.DataFrame()
@@ -159,7 +171,7 @@ def load_abundance_table():
     try:
         df2 = pd.read_excel("Table_S1A.xlsx", sheet_name="Protein-level data", header=3)
         df2["uniprot_id"] = df2["Protein ID"].astype(str).str.split("|").str[1].str.strip()
-        df2["gene"] = df2["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip()
+        df2["gene"] = df2["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip().str.upper()
         return df2
     except:
         return pd.DataFrame()
@@ -562,10 +574,17 @@ elif page == "Search":
         else:
             protein = hits.iloc[0]
             uniprot = protein["uniprot_id"]
-            gene = protein["gene"]
+            gene = protein["gene"] # Now guaranteed uppercase from load_table
             
-            # --- UPDATED: CLICKABLE UNIPROT LINK ---
-            st.markdown(f"### Protein: **{gene}** ([{uniprot}](https://www.uniprot.org/uniprot/{uniprot}))")
+            # Retrieve Description safely
+            desc = protein["desc"] if "desc" in protein else ""
+            
+            # --- UPDATED: Header with Uppercase Gene and Description ---
+            # Shows: "Protein: GENE (Description) (UniProtID)"
+            if desc:
+                st.markdown(f"### Protein: **{gene}** ({desc}) ([{uniprot}](https://www.uniprot.org/uniprot/{uniprot}))")
+            else:
+                st.markdown(f"### Protein: **{gene}** ([{uniprot}](https://www.uniprot.org/uniprot/{uniprot}))")
             
             # --- Filtering ---
             avg_col = f"AvgLog₂({selected_condition}).conformation"
