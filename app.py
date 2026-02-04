@@ -105,7 +105,7 @@ st.markdown("""
         min-height: 0px !important;
         height: auto !important;
         padding: 4px 12px !important;    /* Reduced padding */
-        font-size: 12px !important;      /* Smaller font */
+        font-size: 10px !important;      /* Smaller font */
         border-radius: 10px !important;  /* Tighter corners */
         line-height: 1 !important;       /* Compact text height */
         
@@ -125,7 +125,7 @@ st.markdown("""
     
     /* Target the text inside the button specifically */
     div[data-testid="stSidebar"] .stButton > button p {
-        font-size: 12px !important;
+        font-size: 10px !important;
         padding: 0px !important;
     }
 
