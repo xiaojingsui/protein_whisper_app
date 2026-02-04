@@ -14,11 +14,11 @@ import matplotlib.colors as mcolors
 st.set_page_config(
     page_title="Protein Whisper",
     layout="wide",
-    initial_sidebar_state="expanded"  # <--- CHANGED TO EXPANDED SO SEARCH IS VISIBLE
+    initial_sidebar_state="expanded"  # <--- CRITICAL: Ensures sidebar is open on load
 )
 
 # ============================================================
-# 4. GLOBAL CSS & NAVIGATION STYLING
+# GLOBAL CSS & NAVIGATION STYLING
 # ============================================================
 st.markdown("""
     <style>
@@ -227,10 +227,14 @@ st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
 # ============================================================
 
 if page == "About":
+    # --- Sidebar Placeholder (Keeps sidebar from collapsing) ---
+    with st.sidebar:
+        st.info("Navigate to the **Search** tab to explore proteins.")
+    
     st.title("About Protein Whisper")
     st.markdown("""
     **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. 
-    
+     
     It allows researchers to map peptide-level structural alterations directly onto 3D protein structures predicted by AlphaFold.
 
     ### Key Features
@@ -240,6 +244,10 @@ if page == "About":
     """)
 
 elif page == "Guides":
+    # --- Sidebar Placeholder (Keeps sidebar from collapsing) ---
+    with st.sidebar:
+        st.info("Navigate to the **Search** tab to explore proteins.")
+
     st.title("User Guide")
     st.markdown("### 1. How to Search")
     st.info("Click the **Search** tab above to begin.")
@@ -256,7 +264,7 @@ elif page == "Guides":
     """)
 
 elif page == "Search":
-    # --- Sidebar for inputs (This will now be visible by default) ---
+    # --- Sidebar for inputs ---
     with st.sidebar:
         st.header("Search Parameters")
         query = st.text_input("Search gene or UniProt ID:", "")
@@ -362,11 +370,11 @@ elif page == "Search":
                         """, unsafe_allow_html=True)
                 
                 if color_mode == "Fold-change heatmap":
-                     fig_cb, ax_cb = plt.subplots(figsize=(1.5, 0.1))
-                     cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
-                     cb1.set_label("Log2FC", fontsize=6)
-                     cb1.ax.tick_params(labelsize=6)  
-                     st.pyplot(fig_cb, use_container_width=False)
+                      fig_cb, ax_cb = plt.subplots(figsize=(1.5, 0.1))
+                      cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
+                      cb1.set_label("Log2FC", fontsize=6)
+                      cb1.ax.tick_params(labelsize=6)  
+                      st.pyplot(fig_cb, use_container_width=False)
 
             # --- Plots (Volcano + Abundance) ---
             st.markdown("---")
