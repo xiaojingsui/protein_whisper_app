@@ -106,7 +106,7 @@ st.markdown("""
         min-height: 0px !important;
         height: auto !important;
         padding: 4px 12px !important;
-        font-size: 14px !important;
+        font-size: 10px !important;
         border-radius: 15px !important;
         line-height: 1.2 !important;
         
@@ -127,7 +127,7 @@ st.markdown("""
     /* The "Examples:" Label Styling */
     .example-label {
         margin-top: 6px !important;      /* Pushes text down to align with button center */
-        font-size: 14px !important;      /* Matches button font size */
+        font-size: 10px !important;      /* Matches button font size */
         color: #555 !important;
         font-weight: 600 !important;
         text-align: right;               /* Aligns text near the buttons */
