@@ -374,8 +374,14 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
             title: 'Volcano Plot',
             hovermode: 'closest',
             margin: {{t: 40, l: 50, r: 20, b: 40}},
-            xaxis: {{title: xLabel}},
-            yaxis: {{title: '-Log10(FDR)'}},
+            xaxis: {{
+                title: xLabel,
+                zeroline: false  // Removes the default x=0 line
+            }},
+            yaxis: {{
+                title: '-Log10(FDR)',
+                rangemode: 'tozero' // Forces Y-axis to start at 0
+            }},
             shapes: [
                 // Vertical Line +FC
                 {{
