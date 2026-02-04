@@ -101,19 +101,20 @@ st.markdown("""
     
     /* Target the buttons inside the sidebar */
     div[data-testid="stSidebar"] .stButton > button {
-        /* Force extremely compact size */
+        /* Force compact size - CRITICAL FIXES HERE */
         min-height: 0px !important;
         height: auto !important;
-        padding: 4px 10px !important;
+        width: auto !important;          /* Prevent stretching */
+        padding: 4px 12px !important;    /* Tight padding */
         font-size: 11px !important;
-        margin-top: 4px !important;
         border-radius: 12px !important;
         line-height: 1 !important;
+        margin-top: 4px !important;
         
         /* Coloring */
-        background-color: #f0f2f6 !important;
-        border: 1px solid #d0d4db !important;
-        color: #31333F !important;
+        background-color: #FFFFFF !important;
+        border: 1px solid #CCCCCC !important;
+        color: #555555 !important;
         box-shadow: none !important;
     }
 
@@ -132,11 +133,11 @@ st.markdown("""
 
     /* The "Examples:" Label */
     .example-label {
-        margin-top: 8px !important;      /* Vertical alignment tweak */
+        margin-top: 8px !important;      /* Alignment tweak */
         font-size: 12px !important;      
         color: #666 !important;
         font-weight: 600 !important;
-        text-align: right !important;
+        text-align: right !important;    /* Push label to right to meet buttons */
     }
     </style>
 """, unsafe_allow_html=True)
@@ -311,15 +312,18 @@ elif page == "Search":
         query = st.text_input("Search gene or UniProt ID:", key="search_term")
         
         # 2. Inline Examples (COMPACT)
-        # Ratio adjusted to keep buttons tight to the label
-        c1, c2, c3 = st.columns([0.22, 0.25, 0.25], gap="small")
+        # Using columns to create horizontal layout. 
+        # C1 is label, C2/C3 are buttons.
+        c1, c2, c3 = st.columns([0.25, 0.30, 0.45], gap="small")
         
         with c1:
             st.markdown('<p class="example-label">Examples:</p>', unsafe_allow_html=True)
         with c2:
-            st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=True)
+            # IMPORTANT: use_container_width=False is required for "chip" size
+            st.button("UNC-54", on_click=set_search, args=("UNC-54",), use_container_width=False)
         with c3:
-            st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=True)
+            # IMPORTANT: use_container_width=False
+            st.button("VIT-6", on_click=set_search, args=("VIT-6",), use_container_width=False)
         
         # Spacer
         st.write("") 
