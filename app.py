@@ -921,7 +921,7 @@ st.write("")
 
 # Layout columns to position the box on the far right
 # 3:1 Ratio creates a "bottom right corner" effect
-col_space, col_contact = st.columns([3, 1.5]) 
+col_space, col_contact = st.columns([1, 1.5]) 
 
 with col_contact:
     st.markdown("""
