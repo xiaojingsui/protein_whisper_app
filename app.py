@@ -43,6 +43,9 @@ st.markdown("""
         pointer-events: none !important;
         z-index: 1000001 !important;
     }
+    .stTextInput > div > div > input {
+    font-family: Arial, Helvetica, sans-serif !important;
+}
     
     [data-testid="stHeader"] button[title="View fullscreen"], 
     [data-testid="stHeader"] button[kind="header"] {
