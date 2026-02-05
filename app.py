@@ -698,30 +698,74 @@ elif page == "Search":
                 st.info("💡 **Interactive:** Hover over a dot on the volcano plot to see it on the structure. Grey dots are non-significant.")
 
             # --- Abundance Plot ---
-            st.subheader("Protein Abundance")
-            prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
+            st.markdown("---")
             
+            prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
+
             if not prot_abun.empty:
-                labels = ["Soluble", "Pellet", "Total"]
-                suffix_map = {"Soluble": "soluble", "Pellet": "pellet", "Total": "total"}
-                y_vals = []
-                for label in labels:
-                    suffix = suffix_map[label]
-                    ac = f"AvgLog₂({selected_condition}).{suffix}"
-                    y_vals.append(float(prot_abun[ac].values[0]) if ac in prot_abun.columns else 0)
-                
-                fig_abun, ax_abun = plt.subplots(figsize=(6, 3))
-                x_pos = np.arange(3)
-                ax_abun.bar(x_pos, y_vals, fill=False, edgecolor="black", width=0.6)
-                ax_abun.axhline(0, color='grey', linewidth=0.8)
-                ax_abun.set_xticks(x_pos)
-                ax_abun.set_xticklabels(labels)
-                ax_abun.set_ylabel(r"Log$_2$ Fold Change")
-                st.pyplot(fig_abun)
+                # 1. Extract Data
+                # Helper to safely get value or return 0
+                def get_val(suffix):
+                    col_name = f"AvgLog₂({selected_condition}).{suffix}"
+                    if col_name in prot_abun.columns and pd.notna(prot_abun[col_name].values[0]):
+                        return float(prot_abun[col_name].values[0])
+                    return 0.0
+
+                val_sol = get_val("soluble")
+                val_pel = get_val("pellet")
+                val_tot = get_val("total")
+
+                # 2. Create Layout
+                ab_col1, ab_col2 = st.columns(2)
+
+                # --- PLOT 1: Solubility Changes (Soluble & Pellet) ---
+                with ab_col1:
+                    st.subheader("Solubility Changes")
+                    fig1, ax1 = plt.subplots(figsize=(4, 3))
+                    
+                    # Data
+                    labels1 = ["Soluble", "Pellet"]
+                    vals1 = [val_sol, val_pel]
+                    x_pos1 = np.arange(len(labels1))
+
+                    # Plotting
+                    ax1.bar(x_pos1, vals1, fill=False, edgecolor="black", width=0.6)
+                    ax1.axhline(0, color='grey', linewidth=0.8)
+                    ax1.set_xticks(x_pos1)
+                    ax1.set_xticklabels(labels1, fontsize=10, fontname='Arial')
+                    ax1.set_ylabel(r"Log$_2$ Fold Change", fontsize=10, fontname='Arial')
+                    
+                    # Force Arial on ticks
+                    ax1.tick_params(axis='both', labelsize=9)
+                    for label in ax1.get_yticklabels() + ax1.get_xticklabels():
+                        label.set_fontname('Arial')
+                        
+                    st.pyplot(fig1, use_container_width=False)
+
+                # --- PLOT 2: Total Abundance Changes (Total) ---
+                with ab_col2:
+                    st.subheader("Total Abundance Changes")
+                    fig2, ax2 = plt.subplots(figsize=(2.5, 3)) # Narrower figure for single bar
+                    
+                    # Data
+                    labels2 = ["Total"]
+                    vals2 = [val_tot]
+                    x_pos2 = np.arange(len(labels2))
+
+                    # Plotting
+                    ax2.bar(x_pos2, vals2, fill=False, edgecolor="black", width=0.6)
+                    ax2.axhline(0, color='grey', linewidth=0.8)
+                    ax2.set_xticks(x_pos2)
+                    ax2.set_xticklabels(labels2, fontsize=10, fontname='Arial')
+                    # Y-label optional here since it's next to the other one, but keeping for clarity
+                    # ax2.set_ylabel(r"Log$_2$ Fold Change", fontsize=10, fontname='Arial') 
+
+                    # Force Arial on ticks
+                    ax2.tick_params(axis='both', labelsize=9)
+                    for label in ax2.get_yticklabels() + ax2.get_xticklabels():
+                        label.set_fontname('Arial')
+
+                    st.pyplot(fig2, use_container_width=False)
+
             else:
                 st.write("No abundance data available.")
-
-            st.markdown("---")
-            st.subheader("Peptide Data")
-            if not peps.empty:
-                st.dataframe(peps[["Peptide sequence", "Start position", "End position", avg_col, pval_col, "is_sig"]])
