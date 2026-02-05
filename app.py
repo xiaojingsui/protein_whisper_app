@@ -546,7 +546,7 @@ if page in ["About", "Guides"]:
     """, unsafe_allow_html=True)
 
 # SPACER for fixed navbar
-st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height: 40px;"></div>', unsafe_allow_html=True)
 
 # ============================================================
 # PAGE CONTENT
