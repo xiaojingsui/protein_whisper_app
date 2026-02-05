@@ -726,10 +726,10 @@ elif page == "Search":
                 # 2. Setup Columns
                 ab_col1, ab_col2 = st.columns(2)
 
-                # 3. Define Dynamic Y-Axis Label based on current condition
-                # Escaping the underscore for LaTeX rendering in Matplotlib
-                clean_condition = selected_condition.replace("_", "\_") 
-                dynamic_ylabel = f"Log$_2$ ({clean_condition})"
+                # 3. Define Dynamic Y-Axis Label
+                # We use Unicode subscript (\u2082) instead of LaTeX ($...$) 
+                # to ensure the '2' is also rendered in Arial font.
+                dynamic_ylabel = f"Log\u2082 ({selected_condition})"
 
                 # 4. Plotting Helper
                 def plot_with_pval(ax, x, y, pvals, labels, ylabel_text=None, bar_width=0.6):
@@ -737,15 +737,15 @@ elif page == "Search":
                     bars = ax.bar(x, y, fill=False, edgecolor="black", width=bar_width)
                     ax.axhline(0, color='grey', linewidth=0.8)
                     
-                    # X-Axis Styling
+                    # X-Axis Styling (Force Arial)
                     ax.set_xticks(x)
                     ax.set_xticklabels(labels, fontsize=8, fontname='Arial')
                     
-                    # Y-Axis Label (Dynamic)
+                    # Y-Axis Label (Dynamic + Force Arial)
                     if ylabel_text:
                         ax.set_ylabel(ylabel_text, fontsize=8, fontname='Arial')
                     
-                    # General Tick Styling
+                    # General Tick Styling (Force Arial)
                     ax.tick_params(axis='both', labelsize=8)
                     for label in ax.get_yticklabels() + ax.get_xticklabels():
                         label.set_fontname('Arial')
@@ -760,7 +760,7 @@ elif page == "Search":
                     else:
                         offset = 0.1
 
-                    # Add P-value Text
+                    # Add P-value Text (Force Arial)
                     for bar, p in zip(bars, pvals):
                         height = bar.get_height()
                         p_str = f"p={p:.1e}" if p < 0.001 else f"p={p:.3f}"
@@ -775,7 +775,7 @@ elif page == "Search":
                         ax.text(bar.get_x() + bar.get_width()/2, y_pos, p_str,
                                 ha='center', va=va, fontsize=7, fontname='Arial', color='black')
                     
-                    # Ensure Auto-scaling matches data range
+                    # Ensure Auto-scaling
                     ax.autoscale(enable=True, axis='y', tight=False)
                     ax.margins(y=0.25)
 
@@ -784,7 +784,6 @@ elif page == "Search":
                     st.subheader("Solubility Changes")
                     fig1, ax1 = plt.subplots(figsize=(1.8, 1.8))
                     
-                    # Standard width (0.6) | Pass dynamic label
                     plot_with_pval(ax1, [0, 1], [fc_sol, fc_pel], [p_sol, p_pel], 
                                    ["Soluble", "Pellet"], ylabel_text=dynamic_ylabel, bar_width=0.6)
                     
@@ -793,11 +792,9 @@ elif page == "Search":
                 # --- PLOT 2: Total Abundance ---
                 with ab_col2:
                     st.subheader("Total Abundance Changes")
-                    # Slightly wider figure (1.2) to fit label, but narrower bar
                     fig2, ax2 = plt.subplots(figsize=(1.2, 1.8))
                     
-                    # NARROWER width (0.2) -> This is 1/3 of the solubility bar width
-                    # Also passing dynamic label here as requested
+                    # Narrower bar (0.2) + Dynamic Y-Label
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
                                    ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.2)
 
