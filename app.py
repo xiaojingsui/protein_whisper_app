@@ -599,8 +599,49 @@ if page == "About":
 
 elif page == "Guides":
     st.title("User Guide")
-    st.markdown("### 1. How to Search")
-    st.info("Click the **Search** tab above to begin.")
+
+    st.markdown("### 1. Navigation")
+    st.info("Click the **Search** tab in the top navigation bar to begin your analysis.")
+
+    st.markdown("---")
+
+    st.markdown("### 2. Configuring Your Search")
+    st.markdown("""
+    Once on the Search page, use the **Sidebar** (left panel) to control the analysis:
+    
+    1.  **Search Query:** Enter a *C. elegans* gene symbol (e.g., `UNC-54`) or a UniProt ID.
+    2.  **Stress Condition:** Select the specific experimental comparison (e.g., *wt heat-shock* or *aging*).
+    3.  **Filter Settings:**
+        * **Fold-change cutoff:** Set the threshold for magnitude of change (default: 1.0).
+        * **AdjPval cutoff:** Set the threshold for statistical significance (default: 0.05).
+    4.  **Visualization:** Toggle between "Heatmap" (intensity) or "Peptide type" coloring modes.
+    """)
+
+    st.markdown("---")
+
+    st.markdown("### 3. Interactive Dashboard")
+    st.markdown("""
+    The main view connects structural locations with mass spectrometry data:
+
+    * **The Structure (Left):** An AlphaFold2 predicted model of the protein.
+    * **The Volcano Plot (Right):** * **Dots:** Represent individual peptides.
+        * **Grey dots:** Non-significant peptides (below your filter settings).
+        * **Colored dots:** Significant peptides.
+    
+    **How to Interact:**
+    * 🖱️ **Hover over the Plot:** Hovering over a dot highlights that specific peptide sequence in **Yellow** on the 3D structure.
+    * 🧬 **Hover over the Structure:** Hovering over the protein residues highlights the corresponding data point on the volcano plot (the dot becomes larger).
+    """)
+
+    st.markdown("---")
+
+    st.markdown("### 4. Abundance Data")
+    st.markdown("""
+    Scroll to the bottom of the Search page to view static bar charts:
+    * **Solubility Changes:** Compares abundance in Soluble vs. Pellet fractions.
+    * **Total Abundance:** Shows changes in the overall protein levels.
+    * *P-values represent the statistical significance of these specific changes.*
+    """)
 
 elif page == "Search":
     # --- Sidebar for inputs (ONLY Visible here) ---
