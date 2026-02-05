@@ -796,7 +796,7 @@ elif page == "Search":
                 # --- PLOT 2: Total Abundance ---
                 with ab_col2:
                     st.subheader("Total Abundance Changes")
-                    fig2, ax2 = plt.subplots(figsize=(1.2, 0.9))
+                    fig2, ax2 = plt.subplots(figsize=(0.6, 1.8))
                     
                     # CHANGED: Reduced bar_width from 0.2 to 0.1
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
