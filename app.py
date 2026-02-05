@@ -797,13 +797,20 @@ elif page == "Search":
 
                 # --- PLOT 2: Total Abundance Changes ---
                 with ab_col2:
-                    # CHANGE THIS LINE: (Was st.subheader)
+                    # 1. Title
                     st.markdown("#### Total Abundance Changes")
                     
+                    # 2. Create Plot
                     fig2, ax2 = plt.subplots(figsize=(1.2, 1.8))
                     
+                    # 3. Plot Data
+                    # Increased bar_width to 0.5 (standard look)
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
-                                   ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.1)
+                                   ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.5)
+
+                    # 4. CRITICAL FIX: Set x-limits to add whitespace
+                    # Since the bar is at x=0, setting limits to -1 and 1 creates empty space around it.
+                    ax2.set_xlim(-1, 1)
 
                     st.pyplot(fig2, use_container_width=False)
 
