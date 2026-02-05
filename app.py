@@ -700,10 +700,17 @@ elif page == "Search":
             # --- Abundance Plot ---
             st.markdown("---")
             
+            # 1. FORCE ARIAL GLOBALLY FOR THIS BLOCK
+            plt.rcParams.update({
+                'font.family': 'sans-serif',
+                'font.sans-serif': ['Arial'],
+                'axes.unicode_minus': False  # Ensures minus signs are simple text hyphens
+            })
+            
             prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
 
             if not prot_abun.empty:
-                # 1. Helper to fetch Data
+                # 2. Helper to fetch Data
                 def get_data(suffix):
                     # Fold Change
                     fc_col = f"AvgLog₂({selected_condition}).{suffix}"
@@ -723,29 +730,28 @@ elif page == "Search":
                 fc_pel, p_pel = get_data("pellet")
                 fc_tot, p_tot = get_data("total")
 
-                # 2. Setup Columns
+                # 3. Setup Columns
                 ab_col1, ab_col2 = st.columns(2)
 
-                # 3. Define Dynamic Y-Axis Label
-                # We use Unicode subscript (\u2082) instead of LaTeX ($...$) 
-                # to ensure the '2' is also rendered in Arial font.
+                # 4. Define Dynamic Y-Axis Label (Pure Text, No LaTeX)
+                # \u2082 is the unicode character for subscript 2.
                 dynamic_ylabel = f"Log\u2082 ({selected_condition})"
 
-                # 4. Plotting Helper
+                # 5. Plotting Helper
                 def plot_with_pval(ax, x, y, pvals, labels, ylabel_text=None, bar_width=0.6):
                     # Draw Bars
                     bars = ax.bar(x, y, fill=False, edgecolor="black", width=bar_width)
                     ax.axhline(0, color='grey', linewidth=0.8)
                     
-                    # X-Axis Styling (Force Arial)
+                    # X-Axis Styling (Explicitly Force Arial)
                     ax.set_xticks(x)
                     ax.set_xticklabels(labels, fontsize=8, fontname='Arial')
                     
-                    # Y-Axis Label (Dynamic + Force Arial)
+                    # Y-Axis Label (Explicitly Force Arial)
                     if ylabel_text:
                         ax.set_ylabel(ylabel_text, fontsize=8, fontname='Arial')
                     
-                    # General Tick Styling (Force Arial)
+                    # General Tick Styling (Explicitly Force Arial)
                     ax.tick_params(axis='both', labelsize=8)
                     for label in ax.get_yticklabels() + ax.get_xticklabels():
                         label.set_fontname('Arial')
@@ -760,7 +766,7 @@ elif page == "Search":
                     else:
                         offset = 0.1
 
-                    # Add P-value Text (Force Arial)
+                    # Add P-value Text (Explicitly Force Arial)
                     for bar, p in zip(bars, pvals):
                         height = bar.get_height()
                         p_str = f"p={p:.1e}" if p < 0.001 else f"p={p:.3f}"
