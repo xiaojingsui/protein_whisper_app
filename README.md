@@ -1,6 +1,6 @@
 Protein Whisper — Interactive Proteome Conformation Dynamics Explorer
 
-Protein Whisper is an interactive Streamlit application for visualizing protein conformational changes, solubility, and total abundance using LiP–TMT–MS–based structural proteomics.
+Protein Whisper is an interactive Streamlit application for visualizing protein conformational changes, solubility, and total abundance using TMT-LiP–MS–based structural proteomics.
 It integrates:
 
   AlphaFold structural models
