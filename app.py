@@ -549,7 +549,7 @@ st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
 if page == "About":
     st.markdown("<h1>About Protein Whisper</h1>", unsafe_allow_html=True)
     st.markdown("""
-    **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. It allows researchers to map peptide-level structural alterations directly onto 3D protein structures.
+    **Protein Whisper** is an interactive visualization tool designed to explore TMT-based Limited Proteolysis-Mass Spectrometry (LiP-MS) data. It allows researchers to map peptide-level structural alterations directly onto AlphaFold2-predicted 3D protein structures.
     """)
     
     # --- Workflow Image (Half Size using columns) ---
@@ -573,14 +573,16 @@ if page == "About":
         st.markdown("**Experimental Conditions:**")
         st.markdown("""
         1. **Myosin-ts:** 15 °C and 25 °C
-        2. **Paramyosin-ts:** 15 °C and 25 °C, Q24/35/40, and heat-shock (35 °C vs 20 °C)
-        3. **WT and Q35 Aging:** Day 1, day 6, and day 9 time points
+        2. **Paramyosin-ts:** 15 °C and 25 °C
+        3. **PolyQ:** Q24/35/40
+        4. **Heat-shock:** 35 °C vs 20 °C
+        5. **WT and Q35 Aging:** Day 1, day 6, and day 9 time points
         """)
         
         st.markdown("**Fractions:**")
         st.markdown("""
         - **Conformation (PK):** Protease accessibility (structural) measurements.
-        - **Solubility:** Protein solubility measurements.
+        - **Solubility:** Soluble and Pellet protein abundance measurements.
         - **Total Abundance:** Total protein abundance measurements.
         """)
 
