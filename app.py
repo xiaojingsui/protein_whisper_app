@@ -700,11 +700,11 @@ elif page == "Search":
             # --- Abundance Plot ---
             st.markdown("---")
             
-            # 1. FORCE ARIAL GLOBALLY FOR THIS BLOCK
+            # 1. FORCE ARIAL GLOBALLY
             plt.rcParams.update({
                 'font.family': 'sans-serif',
                 'font.sans-serif': ['Arial'],
-                'axes.unicode_minus': False  # Ensures minus signs are simple text hyphens
+                'axes.unicode_minus': False
             })
             
             prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
@@ -712,13 +712,11 @@ elif page == "Search":
             if not prot_abun.empty:
                 # 2. Helper to fetch Data
                 def get_data(suffix):
-                    # Fold Change
                     fc_col = f"AvgLog₂({selected_condition}).{suffix}"
                     fc = 0.0
                     if fc_col in prot_abun.columns and pd.notna(prot_abun[fc_col].values[0]):
                         fc = float(prot_abun[fc_col].values[0])
                     
-                    # P-value 
                     pval_col = f"AdjPval({selected_condition}).{suffix}"
                     pval = 1.0 
                     if pval_col in prot_abun.columns and pd.notna(prot_abun[pval_col].values[0]):
@@ -733,8 +731,7 @@ elif page == "Search":
                 # 3. Setup Columns
                 ab_col1, ab_col2 = st.columns(2)
 
-                # 4. Define Dynamic Y-Axis Label (Pure Text, No LaTeX)
-                # \u2082 is the unicode character for subscript 2.
+                # 4. Define Dynamic Y-Axis Label
                 dynamic_ylabel = f"Log\u2082 ({selected_condition})"
 
                 # 5. Plotting Helper
@@ -743,15 +740,15 @@ elif page == "Search":
                     bars = ax.bar(x, y, fill=False, edgecolor="black", width=bar_width)
                     ax.axhline(0, color='grey', linewidth=0.8)
                     
-                    # X-Axis Styling (Explicitly Force Arial)
+                    # X-Axis Styling (Force Arial)
                     ax.set_xticks(x)
                     ax.set_xticklabels(labels, fontsize=8, fontname='Arial')
                     
-                    # Y-Axis Label (Explicitly Force Arial)
+                    # Y-Axis Label (Force Arial)
                     if ylabel_text:
                         ax.set_ylabel(ylabel_text, fontsize=8, fontname='Arial')
                     
-                    # General Tick Styling (Explicitly Force Arial)
+                    # General Tick Styling (Force Arial)
                     ax.tick_params(axis='both', labelsize=8)
                     for label in ax.get_yticklabels() + ax.get_xticklabels():
                         label.set_fontname('Arial')
@@ -766,7 +763,7 @@ elif page == "Search":
                     else:
                         offset = 0.1
 
-                    # Add P-value Text (Explicitly Force Arial)
+                    # Add P-value Text (Force Arial)
                     for bar, p in zip(bars, pvals):
                         height = bar.get_height()
                         p_str = f"p={p:.1e}" if p < 0.001 else f"p={p:.3f}"
@@ -790,6 +787,7 @@ elif page == "Search":
                     st.subheader("Solubility Changes")
                     fig1, ax1 = plt.subplots(figsize=(1.8, 1.8))
                     
+                    # Standard width (0.6)
                     plot_with_pval(ax1, [0, 1], [fc_sol, fc_pel], [p_sol, p_pel], 
                                    ["Soluble", "Pellet"], ylabel_text=dynamic_ylabel, bar_width=0.6)
                     
@@ -800,9 +798,9 @@ elif page == "Search":
                     st.subheader("Total Abundance Changes")
                     fig2, ax2 = plt.subplots(figsize=(1.2, 1.8))
                     
-                    # Narrower bar (0.2) + Dynamic Y-Label
+                    # CHANGED: Reduced bar_width from 0.2 to 0.1
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
-                                   ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.2)
+                                   ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.1)
 
                     st.pyplot(fig2, use_container_width=False)
 
