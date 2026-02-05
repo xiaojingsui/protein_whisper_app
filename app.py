@@ -549,7 +549,7 @@ st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
 if page == "About":
     st.markdown("<h1>About Protein Whisper</h1>", unsafe_allow_html=True)
     st.markdown("""
-    **Protein Whisper** is an interactive visualization tool designed to explore TMT-based Limited Proteolysis-Mass Spectrometry (LiP-MS) data. It allows researchers to map peptide-level structural alterations directly onto AlphaFold2-predicted 3D protein structures.
+    **Protein Whisper** is an interactive visualization tool designed to explore TMT-based Limited Proteolysis-Mass Spectrometry (TMT-LiP-MS) data. It allows researchers to map peptide-level structural alterations directly onto AlphaFold2-predicted 3D protein structures.
     """)
     
     # --- Workflow Image (Half Size using columns) ---
