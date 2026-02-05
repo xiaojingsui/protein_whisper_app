@@ -703,67 +703,81 @@ elif page == "Search":
             prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
 
             if not prot_abun.empty:
-                # 1. Extract Data
-                # Helper to safely get value or return 0
-                def get_val(suffix):
-                    col_name = f"AvgLog₂({selected_condition}).{suffix}"
-                    if col_name in prot_abun.columns and pd.notna(prot_abun[col_name].values[0]):
-                        return float(prot_abun[col_name].values[0])
-                    return 0.0
+                # 1. Helper to fetch Data (FC and Pval)
+                def get_data(suffix):
+                    # Fold Change
+                    fc_col = f"AvgLog₂({selected_condition}).{suffix}"
+                    fc = 0.0
+                    if fc_col in prot_abun.columns and pd.notna(prot_abun[fc_col].values[0]):
+                        fc = float(prot_abun[fc_col].values[0])
+                    
+                    # P-value (Assuming column naming convention matches)
+                    pval_col = f"AdjPval({selected_condition}).{suffix}"
+                    pval = 1.0 # Default to nonsig if missing
+                    if pval_col in prot_abun.columns and pd.notna(prot_abun[pval_col].values[0]):
+                        pval = float(prot_abun[pval_col].values[0])
+                    
+                    return fc, pval
 
-                val_sol = get_val("soluble")
-                val_pel = get_val("pellet")
-                val_tot = get_val("total")
+                # Fetch data
+                fc_sol, p_sol = get_data("soluble")
+                fc_pel, p_pel = get_data("pellet")
+                fc_tot, p_tot = get_data("total")
 
-                # 2. Create Layout
+                # 2. Setup Columns for Side-by-Side Layout
                 ab_col1, ab_col2 = st.columns(2)
 
-                # --- PLOT 1: Solubility Changes (Soluble & Pellet) ---
+                # 3. plotting helper function to standardize look & annotation
+                def plot_with_pval(ax, x, y, pvals, labels, y_label=False):
+                    # Draw Bars
+                    bars = ax.bar(x, y, fill=False, edgecolor="black", width=0.6)
+                    ax.axhline(0, color='grey', linewidth=0.8)
+                    
+                    # Axis Styling
+                    ax.set_xticks(x)
+                    ax.set_xticklabels(labels, fontsize=8, fontname='Arial')
+                    if y_label:
+                        ax.set_ylabel(r"Log$_2$ Fold Change", fontsize=8, fontname='Arial')
+                    
+                    ax.tick_params(axis='both', labelsize=8)
+                    for label in ax.get_yticklabels() + ax.get_xticklabels():
+                        label.set_fontname('Arial')
+
+                    # Add P-value Text
+                    for bar, p in zip(bars, pvals):
+                        height = bar.get_height()
+                        # Format P: scientific if small, otherwise decimal
+                        p_str = f"p={p:.1e}" if p < 0.001 else f"p={p:.3f}"
+                        
+                        # Position: Above if positive, Below if negative
+                        y_pos = height + (0.2 if height >= 0 else -0.3) 
+                        va = 'bottom' if height >= 0 else 'top'
+                        
+                        ax.text(bar.get_x() + bar.get_width()/2, y_pos, p_str,
+                                ha='center', va=va, fontsize=7, fontname='Arial', color='black')
+                    
+                    # Expand margins so text fits
+                    ax.margins(y=0.25)
+
+                # --- PLOT 1: Solubility Changes (Half Size) ---
                 with ab_col1:
                     st.subheader("Solubility Changes")
-                    fig1, ax1 = plt.subplots(figsize=(4, 3))
+                    # Reduced Size: (2.2, 1.8)
+                    fig1, ax1 = plt.subplots(figsize=(2.2, 1.8))
                     
-                    # Data
-                    labels1 = ["Soluble", "Pellet"]
-                    vals1 = [val_sol, val_pel]
-                    x_pos1 = np.arange(len(labels1))
-
-                    # Plotting
-                    ax1.bar(x_pos1, vals1, fill=False, edgecolor="black", width=0.6)
-                    ax1.axhline(0, color='grey', linewidth=0.8)
-                    ax1.set_xticks(x_pos1)
-                    ax1.set_xticklabels(labels1, fontsize=10, fontname='Arial')
-                    ax1.set_ylabel(r"Log$_2$ Fold Change", fontsize=10, fontname='Arial')
+                    plot_with_pval(ax1, [0, 1], [fc_sol, fc_pel], [p_sol, p_pel], 
+                                   ["Soluble", "Pellet"], y_label=True)
                     
-                    # Force Arial on ticks
-                    ax1.tick_params(axis='both', labelsize=9)
-                    for label in ax1.get_yticklabels() + ax1.get_xticklabels():
-                        label.set_fontname('Arial')
-                        
                     st.pyplot(fig1, use_container_width=False)
 
-                # --- PLOT 2: Total Abundance Changes (Total) ---
+                # --- PLOT 2: Total Abundance (Half Size) ---
                 with ab_col2:
                     st.subheader("Total Abundance Changes")
-                    fig2, ax2 = plt.subplots(figsize=(2.5, 3)) # Narrower figure for single bar
+                    # Reduced Size: (1.3, 1.8)
+                    fig2, ax2 = plt.subplots(figsize=(1.3, 1.8))
                     
-                    # Data
-                    labels2 = ["Total"]
-                    vals2 = [val_tot]
-                    x_pos2 = np.arange(len(labels2))
-
-                    # Plotting
-                    ax2.bar(x_pos2, vals2, fill=False, edgecolor="black", width=0.6)
-                    ax2.axhline(0, color='grey', linewidth=0.8)
-                    ax2.set_xticks(x_pos2)
-                    ax2.set_xticklabels(labels2, fontsize=10, fontname='Arial')
-                    # Y-label optional here since it's next to the other one, but keeping for clarity
-                    # ax2.set_ylabel(r"Log$_2$ Fold Change", fontsize=10, fontname='Arial') 
-
-                    # Force Arial on ticks
-                    ax2.tick_params(axis='both', labelsize=9)
-                    for label in ax2.get_yticklabels() + ax2.get_xticklabels():
-                        label.set_fontname('Arial')
+                    plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
+                                   ["Total"], y_label=False)
 
                     st.pyplot(fig2, use_container_width=False)
 
