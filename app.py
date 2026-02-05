@@ -45,7 +45,7 @@ st.markdown("""
     }
     .stTextInput > div > div > input {
     font-family: Arial, Helvetica, sans-serif !important;
-}
+    }
     
     [data-testid="stHeader"] button[title="View fullscreen"], 
     [data-testid="stHeader"] button[kind="header"] {
