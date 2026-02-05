@@ -7,6 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import json
+import os
+from PIL import Image
 
 # ============================================================
 # MATPLOTLIB FONT CONFIGURATION (Force Arial for static plots)
@@ -545,14 +547,61 @@ st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
 # ============================================================
 
 if page == "About":
-    # Revised text based on the uploaded image
     st.markdown("<h1>About Protein Whisper</h1>", unsafe_allow_html=True)
     st.markdown("""
     **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. It allows researchers to map peptide-level structural alterations directly onto 3D protein structures.
     """)
+    
+    # --- Workflow Image ---
+    if os.path.exists("workflow.png"):
+        st.image("workflow.png", caption="Protein Whisper Workflow", use_container_width=True)
+    
+    st.markdown("---")
+    
+    # --- Table Information (Detailed) ---
+    st.markdown("### Dataset Overview")
+    st.markdown("""
+    The data summarizes integrated proteomics measurements across aging, myosin-ts, paramyosin-ts, polyQ, and heat-shock conditions at peptide levels. 
+    Each row corresponds to an identified peptide mapped to its parent protein, with experimental log₂-fold changes derived from TMT-based quantitative proteomics.
+    """)
+    
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.markdown("**Experimental Conditions:**")
+        st.markdown("""
+        1. **Myosin-ts:** 15 °C and 25 °C
+        2. **Paramyosin-ts:** 15 °C and 25 °C, Q24/35/40, and heat-shock (35 °C vs 20 °C)
+        3. **WT and Q35 Aging:** Day 1, day 6, and day 9 time points
+        """)
+        
+        st.markdown("**Fractions:**")
+        st.markdown("- **Conformation (PK):** Protease accessibility (structural) measurements.")
+
+    with c2:
+        st.markdown("**Column Descriptions:**")
+        st.markdown("""
+        - **Log₂(…)**: Replicate-level changes in abundance or PK accessibility relative to the indicated control.
+        - **AvgLog₂(…)**: Average log₂-fold change across biological replicates.
+        - **Pval(…) and AdjPval(…)**: Statistical significance and FDR-adjusted values, respectively.
+        """)
+
+    st.markdown("### Color Code Legend (Column Headers)")
+    st.markdown("""
+    The following colors are used to denote specific conditions in the data source:
+    - <span style='color: #B19CD9;'>●</span> **Myosin-ts 15 °C** — Light Lavender Purple
+    - <span style='color: #800080;'>●</span> **Myosin-ts 25 °C** — Medium Purple
+    - <span style='color: #C4A484;'>●</span> **Paramyosin-ts 15 °C** — Light Brown
+    - <span style='color: #8B4513;'>●</span> **Paramyosin-ts 25 °C** — Medium Brown
+    - <span style='color: #90EE90;'>●</span> **Q35/Q24** — Soft Light Green
+    - <span style='color: #3CB371;'>●</span> **Q40/Q24** — Medium Green
+    - <span style='color: #FFB6C1;'>●</span> **WT heat-shock 35 °C vs 20 °C** — Soft Pink
+    - <span style='color: #ADD8E6;'>●</span> **WT day 6 vs day 1** — Light Blue
+    - <span style='color: #B0C4DE;'>●</span> **WT day 9 vs day 1** — Light Steel Blue
+    """, unsafe_allow_html=True)
+
 
 elif page == "Guides":
-    # Removed sidebar instructions here as requested
     st.title("User Guide")
     st.markdown("### 1. How to Search")
     st.info("Click the **Search** tab above to begin.")
@@ -790,9 +839,7 @@ elif page == "Search":
                     ax.margins(y=0.25)
 
                 # --- PLOT 1: Solubility Changes ---
-                # --- PLOT 1: Solubility Changes ---
                 with ab_col1:
-                    # CHANGE THIS LINE: (Was st.subheader)
                     st.markdown("#### Solubility Changes") 
                     
                     fig1, ax1 = plt.subplots(figsize=(1.8, 1.8))
@@ -811,12 +858,10 @@ elif page == "Search":
                     fig2, ax2 = plt.subplots(figsize=(1, 1.8))
                     
                     # 3. Plot Data
-                    # Increased bar_width to 0.5 (standard look)
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
                                    ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.5)
 
                     # 4. CRITICAL FIX: Set x-limits to add whitespace
-                    # Since the bar is at x=0, setting limits to -1 and 1 creates empty space around it.
                     ax2.set_xlim(-1, 1)
 
                     st.pyplot(fig2, use_container_width=False)
