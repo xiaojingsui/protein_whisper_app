@@ -727,7 +727,7 @@ elif page == "Search":
                 # 2. Setup Columns for Side-by-Side Layout
                 ab_col1, ab_col2 = st.columns(2)
 
-                # 3. plotting helper function with DYNAMIC offset
+                # 3. plotting helper function with TIGHTER offset
                 def plot_with_pval(ax, x, y, pvals, labels, y_label=False):
                     # Draw Bars
                     bars = ax.bar(x, y, fill=False, edgecolor="black", width=0.6)
@@ -743,14 +743,14 @@ elif page == "Search":
                     for label in ax.get_yticklabels() + ax.get_xticklabels():
                         label.set_fontname('Arial')
 
-                    # --- CALCULATE DYNAMIC OFFSET ---
-                    # Calculate range to ensure text isn't too far or too close
+                    # --- CALCULATE DYNAMIC OFFSET (TIGHTER) ---
                     if len(y) > 0:
                         y_max = max(max(y), 0)
                         y_min = min(min(y), 0)
                         y_range = abs(y_max - y_min)
-                        if y_range == 0: y_range = 1.0 # prevent zero error
-                        offset = y_range * 0.15  # Set offset to 15% of the total height
+                        if y_range == 0: y_range = 1.0 
+                        # Reduced from 0.15 (15%) to 0.05 (5%) to bring text closer
+                        offset = y_range * 0.05  
                     else:
                         offset = 0.1
 
@@ -771,23 +771,25 @@ elif page == "Search":
                         ax.text(bar.get_x() + bar.get_width()/2, y_pos, p_str,
                                 ha='center', va=va, fontsize=7, fontname='Arial', color='black')
                     
-                    # Expand margins to ensure text fits within the figure
+                    # Expand margins to ensure text fits
                     ax.margins(y=0.25)
 
-                # --- PLOT 1: Solubility Changes ---
+                # --- PLOT 1: Solubility Changes (Narrower) ---
                 with ab_col1:
                     st.subheader("Solubility Changes")
-                    fig1, ax1 = plt.subplots(figsize=(2.2, 1.8))
+                    # Reduced Width: 2.2 -> 1.8
+                    fig1, ax1 = plt.subplots(figsize=(1.8, 1.8))
                     
                     plot_with_pval(ax1, [0, 1], [fc_sol, fc_pel], [p_sol, p_pel], 
                                    ["Soluble", "Pellet"], y_label=True)
                     
                     st.pyplot(fig1, use_container_width=False)
 
-                # --- PLOT 2: Total Abundance ---
+                # --- PLOT 2: Total Abundance (Narrower) ---
                 with ab_col2:
                     st.subheader("Total Abundance Changes")
-                    fig2, ax2 = plt.subplots(figsize=(1.3, 1.8))
+                    # Reduced Width: 1.3 -> 1.0
+                    fig2, ax2 = plt.subplots(figsize=(1.0, 1.8))
                     
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
                                    ["Total"], y_label=False)
