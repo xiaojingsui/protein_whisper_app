@@ -800,7 +800,7 @@ elif page == "Search":
                     
                     # CHANGED: Reduced bar_width from 0.2 to 0.1
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
-                                   ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.1)
+                                   ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.6)
 
                     st.pyplot(fig2, use_container_width=False)
 
