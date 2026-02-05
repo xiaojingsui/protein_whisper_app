@@ -703,7 +703,7 @@ elif page == "Search":
             prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
 
             if not prot_abun.empty:
-                # 1. Helper to fetch Data (FC and Pval)
+                # 1. Helper to fetch Data
                 def get_data(suffix):
                     # Fold Change
                     fc_col = f"AvgLog₂({selected_condition}).{suffix}"
@@ -719,49 +719,52 @@ elif page == "Search":
                     
                     return fc, pval
 
-                # Fetch data
                 fc_sol, p_sol = get_data("soluble")
                 fc_pel, p_pel = get_data("pellet")
                 fc_tot, p_tot = get_data("total")
 
-                # 2. Setup Columns for Side-by-Side Layout
+                # 2. Setup Columns
                 ab_col1, ab_col2 = st.columns(2)
 
-                # 3. Plotting helper function (Updated with bar_width argument)
-                def plot_with_pval(ax, x, y, pvals, labels, y_label=True, bar_width=0.6):
-                    # Draw Bars with custom width
+                # 3. Define Dynamic Y-Axis Label based on current condition
+                # Escaping the underscore for LaTeX rendering in Matplotlib
+                clean_condition = selected_condition.replace("_", "\_") 
+                dynamic_ylabel = f"Log$_2$ ({clean_condition})"
+
+                # 4. Plotting Helper
+                def plot_with_pval(ax, x, y, pvals, labels, ylabel_text=None, bar_width=0.6):
+                    # Draw Bars
                     bars = ax.bar(x, y, fill=False, edgecolor="black", width=bar_width)
                     ax.axhline(0, color='grey', linewidth=0.8)
                     
-                    # Axis Styling
+                    # X-Axis Styling
                     ax.set_xticks(x)
                     ax.set_xticklabels(labels, fontsize=8, fontname='Arial')
                     
-                    # Always show Y-axis label if requested
-                    if y_label:
-                        ax.set_ylabel(r"Log$_2$ Fold Change", fontsize=8, fontname='Arial')
+                    # Y-Axis Label (Dynamic)
+                    if ylabel_text:
+                        ax.set_ylabel(ylabel_text, fontsize=8, fontname='Arial')
                     
+                    # General Tick Styling
                     ax.tick_params(axis='both', labelsize=8)
                     for label in ax.get_yticklabels() + ax.get_xticklabels():
                         label.set_fontname('Arial')
 
-                    # --- CALCULATE DYNAMIC OFFSET ---
+                    # --- DYNAMIC TEXT OFFSET ---
                     if len(y) > 0:
                         y_max = max(max(y), 0)
                         y_min = min(min(y), 0)
                         y_range = abs(y_max - y_min)
                         if y_range == 0: y_range = 1.0 
-                        offset = y_range * 0.05  # 5% offset
+                        offset = y_range * 0.05
                     else:
                         offset = 0.1
 
                     # Add P-value Text
                     for bar, p in zip(bars, pvals):
                         height = bar.get_height()
-                        # Format P
                         p_str = f"p={p:.1e}" if p < 0.001 else f"p={p:.3f}"
                         
-                        # Position logic
                         if height >= 0:
                             y_pos = height + offset
                             va = 'bottom'
@@ -772,31 +775,31 @@ elif page == "Search":
                         ax.text(bar.get_x() + bar.get_width()/2, y_pos, p_str,
                                 ha='center', va=va, fontsize=7, fontname='Arial', color='black')
                     
-                    # Ensure Auto-scaling works for every condition
+                    # Ensure Auto-scaling matches data range
                     ax.autoscale(enable=True, axis='y', tight=False)
-                    ax.margins(y=0.25) # Add padding so text fits
+                    ax.margins(y=0.25)
 
                 # --- PLOT 1: Solubility Changes ---
                 with ab_col1:
                     st.subheader("Solubility Changes")
-                    # Width: 1.8
                     fig1, ax1 = plt.subplots(figsize=(1.8, 1.8))
                     
-                    # Standard width (0.6)
+                    # Standard width (0.6) | Pass dynamic label
                     plot_with_pval(ax1, [0, 1], [fc_sol, fc_pel], [p_sol, p_pel], 
-                                   ["Soluble", "Pellet"], y_label=True, bar_width=0.6)
+                                   ["Soluble", "Pellet"], ylabel_text=dynamic_ylabel, bar_width=0.6)
                     
                     st.pyplot(fig1, use_container_width=False)
 
                 # --- PLOT 2: Total Abundance ---
                 with ab_col2:
                     st.subheader("Total Abundance Changes")
-                    # Width: 1.2 (Slightly wider to accommodate Y-axis label)
+                    # Slightly wider figure (1.2) to fit label, but narrower bar
                     fig2, ax2 = plt.subplots(figsize=(1.2, 1.8))
                     
-                    # Half width (0.3), Y-label Enabled
+                    # NARROWER width (0.2) -> This is 1/3 of the solubility bar width
+                    # Also passing dynamic label here as requested
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
-                                   ["Total"], y_label=True, bar_width=0.3)
+                                   ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.2)
 
                     st.pyplot(fig2, use_container_width=False)
 
