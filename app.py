@@ -9,10 +9,15 @@ import matplotlib.colors as mcolors
 import json
 
 # ============================================================
-# MATPLOTLIB FONT CONFIGURATION (Force Arial for static plots)
+# MATPLOTLIB FONT CONFIGURATION (Strict Arial Enforcement)
 # ============================================================
+# 1. Force the base font family
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = ['Arial', 'Helvetica', 'DejaVu Sans']
+
+# 2. CRITICAL: Make Math text (like the subscript 2) use the same Arial font
+# Without this, "Log2FC" will use a different "Math" font for the number 2.
+plt.rcParams['mathtext.default'] = 'regular' 
 
 # ============================================================
 # Page Configuration
@@ -24,19 +29,24 @@ st.set_page_config(
 )
 
 # ============================================================
-# GLOBAL CSS & NAVIGATION STYLING
+# GLOBAL CSS (FIXED TO SAVE ICONS)
 # ============================================================
 st.markdown("""
     <style>
-    /* --- 1. GLOBAL FONTS (FIXED) --- */
-    /* We target 'html' and 'body' generally, and then specific text tags.
-       CRITICAL FIX: We DO NOT target 'div', 'span', or 'i' globally. 
-       Targeting those breaks Streamlit's icons (rendering them as text).
+    /* --- 1. TARGETED FONT APPLICATION --- */
+    /* The previous error was caused by targeting 'div' and 'span' globally.
+       Streamlit uses specific font-family settings on spans to render icons.
+       We must only target TEXT containers to avoid breaking the "arrow_drop_down" icons.
     */
     html, body, p, h1, h2, h3, h4, h5, h6, li, a, label, button, input, select, textarea {
         font-family: Arial, Helvetica, sans-serif !important;
     }
     
+    /* Target the specific Streamlit markdown container, but not the icon containers */
+    .stMarkdown, .stText {
+        font-family: Arial, Helvetica, sans-serif !important;
+    }
+
     /* --- 2. HEADER & SIDEBAR TOGGLE FIX --- */
     [data-testid="stHeader"] {
         background-color: transparent !important;
@@ -147,129 +157,21 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ============================================================
-# INJECT LOGO
-# ============================================================
-st.markdown('<div class="logo-text">ProteinWhisper</div>', unsafe_allow_html=True)
-
-# ============================================================
-# Data Loading & Caching
-# ============================================================
-@st.cache_data
-def load_table():
-    try:
-        df = pd.read_excel("Table_S1A.xlsx", header=3)
-        df["uniprot_id"] = df["Protein ID"].astype(str).str.split("|").str[1].str.strip()
-        
-        # Force Uppercase for Gene Symbol
-        df["gene"] = df["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip().str.upper()
-        
-        # --- CLEANING DESCRIPTION LOGIC ---
-        if "Protein names" in df.columns:
-            df["desc"] = df["Protein names"].astype(str).str.split(";").str[0].str.split(" OS=").str[0].str.strip()
-        elif "Description" in df.columns:
-            df["desc"] = df["Description"].astype(str).str.split(" OS=").str[0].str.strip()
-        else:
-            df["desc"] = ""
-            
-        return df
-    except FileNotFoundError:
-        return pd.DataFrame()
-
-@st.cache_data
-def load_abundance_table():
-    try:
-        df2 = pd.read_excel("Table_S1A.xlsx", sheet_name="Protein-level data", header=3)
-        df2["uniprot_id"] = df2["Protein ID"].astype(str).str.split("|").str[1].str.strip()
-        df2["gene"] = df2["Gene symbol"].astype(str).str.replace("CELE_", "", regex=False).str.strip().str.upper()
-        return df2
-    except:
-        return pd.DataFrame()
-
-df = load_table()
-abun_df = load_abundance_table()
-
-# Stop if data didn't load
-if df.empty:
-    st.error("Data file 'Table_S1A.xlsx' not found or empty.")
-    st.stop()
-
-# ============================================================
-# Helper Functions
-# ============================================================
-def extract_conditions(df):
-    conds = []
-    for col in df.columns:
-        m = re.match(r"AvgLog₂\((.+)\)\.conformation", col)
-        if m:
-            conds.append(m.group(1))
-    return sorted(set(conds))
-
-def sort_conditions(conds):
-    priority = [
-        "wt day6/wt day1", "wt day9/wt day1", "Q35/wt aging",
-        "wt heat-shock 35°C/wt 20°C", "Q35/Q24", "Q40/Q24",
-        "myosin-ts 15°C/wt 15°C", "myosin-ts 25°C/wt 25°C",
-        "paramyosin-ts 15°C/wt 15°C", "paramyosin-ts 25°C/wt 25°C"
-    ]
-    ordered = [c for c in priority if c in conds]
-    remaining = sorted(set(conds) - set(ordered))
-    return ordered + remaining
-
-conditions_raw = extract_conditions(df)
-conditions = sort_conditions(conditions_raw)
-
-@st.cache_data(show_spinner=True)
-def download_structure(uniprot):
-    uniprot = uniprot.strip().upper()
-    headers = {"User-Agent": "Mozilla/5.0 (Streamlit App)"}
-    api_url = f"https://alphafold.ebi.ac.uk/api/prediction/{uniprot}"
-    
-    try:
-        r = requests.get(api_url, headers=headers)
-        if r.status_code != 200: return None, None, None, "API request failed"
-        data = r.json()
-    except:
-        return None, None, None, "Invalid JSON response"
-
-    if len(data) == 0: return None, None, None, "AlphaFold returned empty list"
-
-    model_url, file_format = None, None
-    for entry in data:
-        if "modelUrl" in entry:
-            model_url = entry["modelUrl"]
-            file_format = "pdb"
-            break
-    if model_url is None:
-        for entry in data:
-            if "cifUrl" in entry:
-                model_url = entry["cifUrl"]
-                file_format = "cif"
-                break
-
-    if model_url is None: return None, None, None, "No modelUrl or cifUrl found"
-
-    res = requests.get(model_url, headers=headers)
-    if res.status_code != 200 or len(res.text) < 500:
-        return None, model_url, file_format, "Failed to download structure"
-
-    return res.text, model_url, file_format, None
+# ... [KEEP ALL THE LOADING FUNCTIONS AS THEY WERE] ...
+# (load_table, load_abundance_table, extract_conditions, sort_conditions, download_structure)
 
 # ============================================================
 # NEW: INTERACTIVE COMBINED VIEWER (Structure + Volcano)
 # ============================================================
 def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutoff, p_cutoff, selected_condition):
-    """
-    Creates a single HTML/JS component linking 3Dmol.js (structure) and Plotly.js (volcano).
-    """
+    # ... [Keep this function exactly the same] ...
+    # Note: The HTML inside this function already has: 
+    # font-family: Arial, Helvetica, sans-serif !important;
+    # So it is safe.
     
     # 1. Prepare Peptide Data for JavaScript
     js_peptides = []
-    
-    # Normalize PDB content for JS injection (escape backticks)
     pdb_clean = json.dumps(pdb_content) 
-    
-    # Determine plot threshold line values for JS
     neg_log_p_thresh = -np.log10(p_cutoff)
 
     for i, row in peptides_df.iterrows():
@@ -279,14 +181,13 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
             "end": int(row["end"]),
             "x": row["log2fc"],
             "y": row["neg_log_p"],
-            "color": row["color"], # Significant gets color, others grey
+            "color": row["color"],
             "seq": row["sequence"],
             "is_sig": row["is_significant"]
         })
 
     js_peptides_json = json.dumps(js_peptides)
 
-    # 2. The HTML/JS Template
     html_code = f"""
     <!DOCTYPE html>
     <html>
@@ -295,52 +196,23 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
         <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
         <style>
-            /* Force Arial in the HTML Component */
             body, .tooltip, .js-plotly-plot {{
                 font-family: Arial, Helvetica, sans-serif !important;
             }}
-            .container {{
-                display: flex;
-                flex-direction: row;
-                width: 100%;
-                height: 600px;
-                gap: 20px;
-            }}
-            #mol-container {{
-                width: 60%;
-                height: 100%;
-                border: 1px solid #eee;
-                position: relative;
-            }}
-            #plot-container {{
-                width: 40%;
-                height: 100%;
-                border: 1px solid #eee;
-            }}
+            .container {{ display: flex; flex-direction: row; width: 100%; height: 600px; gap: 20px; }}
+            #mol-container {{ width: 60%; height: 100%; border: 1px solid #eee; position: relative; }}
+            #plot-container {{ width: 40%; height: 100%; border: 1px solid #eee; }}
             .tooltip {{
-                position: absolute;
-                background: rgba(0, 0, 0, 0.7);
-                color: white;
-                padding: 5px;
-                border-radius: 4px;
-                pointer-events: none;
-                display: none;
-                z-index: 100;
-                font-size: 12px;
-                font-family: Arial, Helvetica, sans-serif; /* Explicit Font */
+                position: absolute; background: rgba(0, 0, 0, 0.7); color: white; padding: 5px;
+                border-radius: 4px; pointer-events: none; display: none; z-index: 100;
+                font-size: 12px; font-family: Arial, Helvetica, sans-serif;
             }}
         </style>
     </head>
     <body>
-
-    <div class="container">
-        <div id="mol-container"></div>
-        <div id="plot-container"></div>
-    </div>
+    <div class="container"><div id="mol-container"></div><div id="plot-container"></div></div>
     <div id="tooltip" class="tooltip"></div>
-
     <script>
-        // --- DATA INJECTION ---
         const pdbData = {pdb_clean};
         const fileFormat = "{file_format}";
         const peptides = {js_peptides_json};
@@ -348,338 +220,85 @@ def render_interactive_dashboard(pdb_content, file_format, peptides_df, fc_cutof
         const pThresh = {neg_log_p_thresh};
         const xLabel = "Log<sub>2</sub> ({selected_condition})";
 
-        // --- 1. SETUP 3DMOL VIEWER ---
-        const viewer = $3Dmol.createViewer("mol-container", {{
-            defaultcolors: $3Dmol.rasmolElementColors
-        }});
-        
+        const viewer = $3Dmol.createViewer("mol-container", {{ defaultcolors: $3Dmol.rasmolElementColors }});
         viewer.addModel(pdbData, fileFormat);
-        
-        // Base Style: Transparent White Cartoon
         viewer.setStyle({{}}, {{cartoon: {{color: 'white', opacity: 0.6}}}});
-        
-        // Apply Peptide Colors ONLY for Significant Peptides
-        peptides.forEach(p => {{
-            if (p.is_sig) {{
-                viewer.addStyle({{resi: splitRange(p.start, p.end)}}, {{cartoon: {{color: p.color, opacity: 1.0}}}});
-            }}
-        }});
+        peptides.forEach(p => {{ if (p.is_sig) {{ viewer.addStyle({{resi: splitRange(p.start, p.end)}}, {{cartoon: {{color: p.color, opacity: 1.0}}}}); }} }});
+        viewer.zoomTo(); viewer.render();
 
-        viewer.zoomTo();
-        viewer.render();
+        function splitRange(start, end) {{ let arr = []; for (let i = start; i <= end; i++) arr.push(i); return arr; }}
 
-        // Helper to handle range lists for 3Dmol
-        function splitRange(start, end) {{
-            let arr = [];
-            for (let i = start; i <= end; i++) arr.push(i);
-            return arr;
-        }}
-
-        // --- 2. SETUP PLOTLY VOLCANO ---
         const xVals = peptides.map(p => p.x);
         const yVals = peptides.map(p => p.y);
         const colors = peptides.map(p => p.color);
         const hoverText = peptides.map(p => `Seq: ${{p.seq}}<br>Start: ${{p.start}}<br>End: ${{p.end}}`);
 
         const trace = {{
-            x: xVals,
-            y: yVals,
-            mode: 'markers',
-            type: 'scatter',
-            text: hoverText,
-            marker: {{
-                size: 8,
-                color: colors,
-                line: {{color: 'black', width: 0.5}},
-                opacity: 0.8
-            }},
+            x: xVals, y: yVals, mode: 'markers', type: 'scatter', text: hoverText,
+            marker: {{ size: 8, color: colors, line: {{color: 'black', width: 0.5}}, opacity: 0.8 }},
             hoverinfo: 'text+x+y'
         }};
 
         const layout = {{
             title: 'PK Accessibility',
-            font: {{ family: 'Arial, Helvetica, sans-serif' }}, // Force Plotly Font
-            hovermode: 'closest',
-            margin: {{t: 40, l: 50, r: 20, b: 40}},
-            xaxis: {{
-                title: xLabel,
-                zeroline: false  // Removes the default x=0 line
-            }},
-            yaxis: {{
-                title: '-Log<sub>10</sub> (FDR)',
-                rangemode: 'tozero' // Forces Y-axis to start at 0
-            }},
+            font: {{ family: 'Arial, Helvetica, sans-serif' }}, 
+            hovermode: 'closest', margin: {{t: 40, l: 50, r: 20, b: 40}},
+            xaxis: {{ title: xLabel, zeroline: false }},
+            yaxis: {{ title: '-Log<sub>10</sub> (FDR)', rangemode: 'tozero' }},
             shapes: [
-                // Vertical Line +FC
-                {{
-                    type: 'line', x0: fcThresh, x1: fcThresh, y0: 0, y1: 1, yref: 'paper',
-                    line: {{color: 'grey', width: 1.5, dash: 'dash'}}
-                }},
-                // Vertical Line -FC
-                {{
-                    type: 'line', x0: -fcThresh, x1: -fcThresh, y0: 0, y1: 1, yref: 'paper',
-                    line: {{color: 'grey', width: 1.5, dash: 'dash'}}
-                }},
-                // Horizontal Line P-val
-                {{
-                    type: 'line', x0: 0, x1: 1, xref: 'paper', y0: pThresh, y1: pThresh,
-                    line: {{color: 'grey', width: 1.5, dash: 'dash'}}
-                }}
+                {{ type: 'line', x0: fcThresh, x1: fcThresh, y0: 0, y1: 1, yref: 'paper', line: {{color: 'grey', width: 1.5, dash: 'dash'}} }},
+                {{ type: 'line', x0: -fcThresh, x1: -fcThresh, y0: 0, y1: 1, yref: 'paper', line: {{color: 'grey', width: 1.5, dash: 'dash'}} }},
+                {{ type: 'line', x0: 0, x1: 1, xref: 'paper', y0: pThresh, y1: pThresh, line: {{color: 'grey', width: 1.5, dash: 'dash'}} }}
             ]
         }};
 
         Plotly.newPlot('plot-container', [trace], layout);
 
-        // --- 3. INTERACTION: PLOT -> STRUCTURE ---
         const plotDiv = document.getElementById('plot-container');
-
         plotDiv.on('plotly_hover', function(data){{
-            const pt = data.points[0];
-            const idx = pt.pointIndex; // Index in our peptides array
-            const pep = peptides[idx];
-
-            // Highlight in 3D
-            // 1. Add a temporary highlight style (Thicker, brighter)
-            viewer.addStyle({{resi: splitRange(pep.start, pep.end)}}, 
-                {{cartoon: {{color: '#FFFF00', thickness: 1.0, opacity: 1.0}}}}
-            );
+            const idx = data.points[0].pointIndex; const pep = peptides[idx];
+            viewer.addStyle({{resi: splitRange(pep.start, pep.end)}}, {{cartoon: {{color: '#FFFF00', thickness: 1.0, opacity: 1.0}}}});
             viewer.render();
         }});
-
         plotDiv.on('plotly_unhover', function(data){{
-            // Reset Styles
             viewer.setStyle({{}}, {{cartoon: {{color: 'white', opacity: 0.6}}}});
-            peptides.forEach(p => {{
-                if(p.is_sig) {{
-                    viewer.addStyle({{resi: splitRange(p.start, p.end)}}, {{cartoon: {{color: p.color, opacity: 1.0}}}});
-                }}
-            }});
+            peptides.forEach(p => {{ if(p.is_sig) {{ viewer.addStyle({{resi: splitRange(p.start, p.end)}}, {{cartoon: {{color: p.color, opacity: 1.0}}}}); }} }});
             viewer.render();
         }});
 
-        // --- 4. INTERACTION: STRUCTURE -> PLOT ---
         let lastHoveredIdx = -1;
-
         viewer.setHoverable({{}}, true, function(atom, viewer, event, container) {{
             if(!atom) return;
-            
-            // Find which peptide contains this residue
             let foundIdx = -1;
-            for(let i=0; i<peptides.length; i++) {{
-                if(atom.resi >= peptides[i].start && atom.resi <= peptides[i].end) {{
-                    foundIdx = i;
-                    break;
-                }}
-            }}
-
+            for(let i=0; i<peptides.length; i++) {{ if(atom.resi >= peptides[i].start && atom.resi <= peptides[i].end) {{ foundIdx = i; break; }} }}
             if (foundIdx !== -1 && foundIdx !== lastHoveredIdx) {{
                 lastHoveredIdx = foundIdx;
-                
-                // Highlight Plot Point
-                const newColors = [...colors];
-                const newSizes = Array(peptides.length).fill(8);
-                
-                newColors[foundIdx] = '#FFFF00'; // Yellow highlight
-                newSizes[foundIdx] = 18;         // Bigger size
-
-                Plotly.restyle('plot-container', {{
-                    'marker.color': [newColors],
-                    'marker.size': [newSizes],
-                    'marker.line.width': [Array(peptides.length).fill(0.5).map((v, i) => i === foundIdx ? 2 : 0.5)]
-                }});
-                
-                // Show custom tooltip on structure
+                const newColors = [...colors]; const newSizes = Array(peptides.length).fill(8);
+                newColors[foundIdx] = '#FFFF00'; newSizes[foundIdx] = 18;
+                Plotly.restyle('plot-container', {{ 'marker.color': [newColors], 'marker.size': [newSizes], 'marker.line.width': [Array(peptides.length).fill(0.5).map((v, i) => i === foundIdx ? 2 : 0.5)] }});
                 const tooltip = document.getElementById('tooltip');
-                tooltip.style.display = 'block';
-                tooltip.style.left = event.x + 'px';
-                tooltip.style.top = event.y + 'px';
+                tooltip.style.display = 'block'; tooltip.style.left = event.x + 'px'; tooltip.style.top = event.y + 'px';
                 tooltip.innerHTML = 'Residue: ' + atom.resi + '<br>Seq: ' + peptides[foundIdx].seq;
             }}
         }}, function(atom, viewer, event, container) {{
-            // On Leave
             if (lastHoveredIdx !== -1) {{
-                // Reset Plot
-                Plotly.restyle('plot-container', {{
-                    'marker.color': [colors],
-                    'marker.size': [Array(peptides.length).fill(8)],
-                    'marker.line.width': [Array(peptides.length).fill(0.5)]
-                }});
-                lastHoveredIdx = -1;
-                document.getElementById('tooltip').style.display = 'none';
+                Plotly.restyle('plot-container', {{ 'marker.color': [colors], 'marker.size': [Array(peptides.length).fill(8)], 'marker.line.width': [Array(peptides.length).fill(0.5)] }});
+                lastHoveredIdx = -1; document.getElementById('tooltip').style.display = 'none';
             }}
         }});
-
     </script>
     </body>
     </html>
     """
     return html_code
 
-# ============================================================
-# NAVIGATION CONTROLLER
-# ============================================================
-page = st.radio(
-    "Main Navigation", 
-    ["Search", "About", "Guides"], 
-    horizontal=True,
-    label_visibility="collapsed"
-)
+# ... [KEEP NAVIGATION AND SEARCH LOGIC UNCHANGED] ...
+# (Page logic, search logic, data processing)
 
-# SPACER for fixed navbar
-st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
+# ... [SCROLL DOWN TO WHERE THE PLOTS ARE RENDERED] ...
 
-# ============================================================
-# PAGE CONTENT
-# ============================================================
+            # [Inside the Search Loop, after rendering the Structure]
 
-if page == "About":
-    with st.sidebar:
-        st.info("Navigate to the **Search** tab to explore proteins.")
-    
-    st.title("About Protein Whisper")
-    st.markdown("""
-    **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. 
-    It allows researchers to map peptide-level structural alterations directly onto 3D protein structures.
-    """)
-
-elif page == "Guides":
-    with st.sidebar:
-        st.info("Navigate to the **Search** tab to explore proteins.")
-
-    st.title("User Guide")
-    st.markdown("### 1. How to Search")
-    st.info("Click the **Search** tab above to begin.")
-
-elif page == "Search":
-    # --- Sidebar for inputs ---
-    with st.sidebar:
-        st.header("Search Parameters")
-        
-        # Session State Logic - Default to UNC-54
-        if 'search_term' not in st.session_state:
-            st.session_state.search_term = "UNC-54"
-
-        # 1. Search Box
-        query = st.text_input("Search gene or UniProt ID:", key="search_term")
-        st.write("") 
-
-        # 3. Rest of controls
-        selected_condition = st.selectbox("Stress condition:", conditions)
-        
-        with st.expander("Filter Settings", expanded=True):
-            fc_cutoff = st.number_input(r"Fold-change cutoff (|Log$_2$|):", value=1.0, min_value=0.0, step=0.1)
-            p_cutoff = st.number_input("AdjPval cutoff:", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
-
-        with st.expander("Visualization Settings"):
-            color_mode = st.selectbox("Peptide color mode:", ["Fold-change heatmap", "Peptide type (red/cyan)"])
-
-    # --- Main Content ---
-    if not query:
-        st.markdown("<h2 style='text-align: center; color: #19CFE2;'>Structure Viewer</h2>", unsafe_allow_html=True)
-        st.info("Type a C. elegans gene name or UniProt ID in the **sidebar** to explore a protein.")
-    else:
-        # Search Logic
-        hits = df[
-            df["uniprot_id"].str.contains(query, case=False, na=False)
-            | df["gene"].str.contains(query, case=False, na=False)
-        ]
-
-        if hits.empty:
-            st.error(f"No protein found for '{query}'.")
-        else:
-            protein = hits.iloc[0]
-            uniprot = protein["uniprot_id"]
-            gene = protein["gene"]
-            
-            # Retrieve Description safely
-            desc = protein["desc"] if "desc" in protein else ""
-            
-            # --- Header Display ---
-            if desc:
-                st.markdown(f"### Protein: **{gene}** ({desc}) ([{uniprot}](https://www.uniprot.org/uniprot/{uniprot}))")
-            else:
-                st.markdown(f"### Protein: **{gene}** ([{uniprot}](https://www.uniprot.org/uniprot/{uniprot}))")
-            
-            # --- Filtering ---
-            avg_col = f"AvgLog₂({selected_condition}).conformation"
-            pval_col = f"AdjPval({selected_condition}).conformation"
-            prot_all = df[df["uniprot_id"] == uniprot]
-            
-            # Identify Significant vs Non-Significant
-            peps = prot_all.copy()
-            peps["is_sig"] = (peps[avg_col].abs() >= fc_cutoff) & (peps[pval_col] <= p_cutoff)
-            
-            sig_count = peps["is_sig"].sum()
-            
-            if peps.empty:
-                  st.warning("No peptides found for this protein.")
-            else:
-                  if sig_count > 0:
-                      st.success(f"{sig_count} significant peptides found out of {len(peps)} total.")
-                  else:
-                      st.info(f"No significant peptides found (Total: {len(peps)}). Adjust filters to see changes.")
-
-            # --- Prepare Data for Visualization ---
-            viz_data = []
-            full_color = "#E1341E"
-            half_color = "#1ECBE1"
-            grey_color = "#D3D3D3" # Light grey for non-sig
-
-            if not peps.empty:
-                # Normalization for heatmap (Calculated on significant range usually, or global)
-                fc_vals = peps[avg_col].astype(float)
-                maxfc = float(fc_vals.abs().max())
-                if maxfc == 0: maxfc = 1.0
-                
-                cmap = plt.get_cmap("coolwarm")
-                norm = mcolors.TwoSlopeNorm(vmin=-maxfc, vcenter=0, vmax=maxfc)
-
-                for _, row in peps.iterrows():
-                    start, end = row["Start position"], row["End position"]
-                    if pd.isna(start) or pd.isna(end): continue
-                    
-                    fc = float(row[avg_col])
-                    pval = float(row[pval_col])
-                    seq = row["Peptide sequence"]
-                    is_sig = row["is_sig"]
-
-                    # Determine Color
-                    if not is_sig:
-                        color = grey_color
-                    else:
-                        if color_mode == "Peptide type (red/cyan)":
-                            color = full_color if row["Peptide type"] == "full" else half_color
-                        else:
-                            color = mcolors.to_hex(cmap(norm(fc)))
-                    
-                    viz_data.append({
-                        "start": start, 
-                        "end": end, 
-                        "color": color, 
-                        "log2fc": fc,
-                        "neg_log_p": -np.log10(pval + 1e-300),
-                        "sequence": seq,
-                        "is_significant": bool(is_sig)
-                    })
-            
-            viz_df = pd.DataFrame(viz_data)
-
-            # --- Download Structure ---
-            st.markdown("---")
-            structure_text, model_url, file_format, error_msg = download_structure(uniprot)
-
-            if structure_text is None:
-                st.error("No AlphaFold model available.")
-            elif viz_df.empty:
-                st.warning("Structure available, but no peptides to map.")
-            else:
-                # --- RENDER INTERACTIVE DASHBOARD ---
-                # Pass thresholds and condition name to function
-                html_view = render_interactive_dashboard(
-                    structure_text, file_format, viz_df, fc_cutoff, p_cutoff, selected_condition
-                )
-                components.html(html_view, height=650)
-                
                 # Legend for Colors (Only show if Heatmap is active and there are sig peptides)
                 if color_mode == "Fold-change heatmap" and sig_count > 0:
                     c_left, c_rest = st.columns([1, 2])
@@ -687,8 +306,15 @@ elif page == "Search":
                     with c_left:
                           fig_cb, ax_cb = plt.subplots(figsize=(1, 0.1))
                           cb1 = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax_cb, orientation="horizontal")
-                          cb1.set_label(r"Log$_2$FC", fontsize=8)
+                          
+                          # --- REVISED: Explicitly set Arial for the labels ---
+                          cb1.set_label(r"Log$_2$FC", fontsize=8, fontname='Arial') 
                           cb1.ax.tick_params(labelsize=8)
+                          
+                          # Force the ticks to use Arial explicitly (double insurance)
+                          for t in cb1.ax.get_xticklabels():
+                              t.set_fontname('Arial')
+                              
                           st.pyplot(fig_cb, use_container_width=False)
                 
                 st.info("💡 **Interactive:** Hover over a dot on the volcano plot to see it on the structure. Grey dots are non-significant.")
@@ -698,26 +324,22 @@ elif page == "Search":
             prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
             
             if not prot_abun.empty:
-                labels = ["Soluble", "Pellet", "Total"]
-                suffix_map = {"Soluble": "soluble", "Pellet": "pellet", "Total": "total"}
-                y_vals = []
-                for label in labels:
-                    suffix = suffix_map[label]
-                    ac = f"AvgLog₂({selected_condition}).{suffix}"
-                    y_vals.append(float(prot_abun[ac].values[0]) if ac in prot_abun.columns else 0)
+                # ... [Keep logic] ...
                 
                 fig_abun, ax_abun = plt.subplots(figsize=(6, 3))
                 x_pos = np.arange(3)
                 ax_abun.bar(x_pos, y_vals, fill=False, edgecolor="black", width=0.6)
                 ax_abun.axhline(0, color='grey', linewidth=0.8)
                 ax_abun.set_xticks(x_pos)
-                ax_abun.set_xticklabels(labels)
-                ax_abun.set_ylabel(r"Log$_2$ Fold Change")
+                ax_abun.set_xticklabels(labels, fontname='Arial') # Force Arial
+                
+                # Force Arial on Y Label and Ticks
+                ax_abun.set_ylabel(r"Log$_2$ Fold Change", fontname='Arial')
+                for tick in ax_abun.get_yticklabels():
+                    tick.set_fontname('Arial')
+                    
                 st.pyplot(fig_abun)
             else:
                 st.write("No abundance data available.")
 
-            st.markdown("---")
-            st.subheader("Peptide Data")
-            if not peps.empty:
-                st.dataframe(peps[["Peptide sequence", "Start position", "End position", avg_col, pval_col, "is_sig"]])
+            # ... [Rest of the code] ...
