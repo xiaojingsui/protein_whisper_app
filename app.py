@@ -913,27 +913,27 @@ elif page == "Search":
                 st.write("No abundance data available.")
 
 # ============================================================
-# FOOTER / CONTACT INFO (Added to Right Bottom Corner)
+# FOOTER / CONTACT INFO (Updated: Strict Left Alignment)
 # ============================================================
 st.write("")
 st.write("")
 st.write("")
 
-# Layout columns to position the box on the far right
-# 3:1 Ratio creates a "bottom right corner" effect
-col_space, col_contact = st.columns([1.5, 3]) 
+# REMOVED columns logic to prevent centering issues.
+# Added 'width: fit-content' to ensure it hugs the left side.
 
-with col_contact:
-    st.markdown("""
-        <div style="
-            border-left: 5px solid #006064; 
-            background-color: transparent; 
-            padding: 8px 12px; 
-            font-family: Arial, sans-serif;
-        ">
-            <strong style="color: #006064; display: block; margin-bottom: 4px;">APP Support</strong>
-            <div style="font-size: 15px; color: #333;">
-                Xiaojing Sui: <a href="mailto:xiaojing.sui@northwestern.edu" style="color: #006064; text-weight: bold;">xiaojing.sui@northwestern.edu</a>
-            </div>
+st.markdown("""
+    <div style="
+        border-left: 5px solid #006064; 
+        background-color: transparent; 
+        padding: 8px 12px; 
+        font-family: Arial, sans-serif;
+        width: fit-content; 
+        max-width: 100%;
+    ">
+        <strong style="color: #006064; display: block; margin-bottom: 4px;">APP Support</strong>
+        <div style="font-size: 15px; color: #333;">
+            Xiaojing Sui: <a href="mailto:xiaojing.sui@northwestern.edu" style="color: #006064; text-weight: bold;">xiaojing.sui@northwestern.edu</a>
         </div>
-    """, unsafe_allow_html=True)
+    </div>
+""", unsafe_allow_html=True)
