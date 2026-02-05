@@ -552,9 +552,11 @@ if page == "About":
     **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. It allows researchers to map peptide-level structural alterations directly onto 3D protein structures.
     """)
     
-    # --- Workflow Image ---
+    # --- Workflow Image (Half Size using columns) ---
     if os.path.exists("workflow.png"):
-        st.image("workflow.png", caption="Protein Whisper Workflow", use_container_width=True)
+        c_img, c_spacer = st.columns([1, 1])
+        with c_img:
+            st.image("workflow.png", caption="Protein Whisper Workflow", use_container_width=True)
     
     st.markdown("---")
     
@@ -576,7 +578,11 @@ if page == "About":
         """)
         
         st.markdown("**Fractions:**")
-        st.markdown("- **Conformation (PK):** Protease accessibility (structural) measurements.")
+        st.markdown("""
+        - **Conformation (PK):** Protease accessibility (structural) measurements.
+        - **Solubility:** Protein solubility measurements.
+        - **Total Abundance:** Total protein abundance measurements.
+        """)
 
     with c2:
         st.markdown("**Column Descriptions:**")
@@ -585,20 +591,8 @@ if page == "About":
         - **AvgLog₂(…)**: Average log₂-fold change across biological replicates.
         - **Pval(…) and AdjPval(…)**: Statistical significance and FDR-adjusted values, respectively.
         """)
-
-    st.markdown("### Color Code Legend (Column Headers)")
-    st.markdown("""
-    The following colors are used to denote specific conditions in the data source:
-    - <span style='color: #B19CD9;'>●</span> **Myosin-ts 15 °C** — Light Lavender Purple
-    - <span style='color: #800080;'>●</span> **Myosin-ts 25 °C** — Medium Purple
-    - <span style='color: #C4A484;'>●</span> **Paramyosin-ts 15 °C** — Light Brown
-    - <span style='color: #8B4513;'>●</span> **Paramyosin-ts 25 °C** — Medium Brown
-    - <span style='color: #90EE90;'>●</span> **Q35/Q24** — Soft Light Green
-    - <span style='color: #3CB371;'>●</span> **Q40/Q24** — Medium Green
-    - <span style='color: #FFB6C1;'>●</span> **WT heat-shock 35 °C vs 20 °C** — Soft Pink
-    - <span style='color: #ADD8E6;'>●</span> **WT day 6 vs day 1** — Light Blue
-    - <span style='color: #B0C4DE;'>●</span> **WT day 9 vs day 1** — Light Steel Blue
-    """, unsafe_allow_html=True)
+    
+    # NOTE: The Color Code Legend has been removed as requested.
 
 
 elif page == "Guides":
