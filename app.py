@@ -43,8 +43,10 @@ st.markdown("""
         pointer-events: none !important;
         z-index: 1000001 !important;
     }
-    .stTextInput > div > div > input {
-    font-family: Arial, Helvetica, sans-serif !important;
+    .stTextInput > div > div > input,
+    [data-testid="stNumberInput"] input {
+        font-family: Arial, Helvetica, sans-serif !important;
+        font-size: 14px !important;  /* <--- Adds consistency with labels/dropdowns */
     }
     
     [data-testid="stHeader"] button[title="View fullscreen"], 
