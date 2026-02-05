@@ -932,7 +932,7 @@ with col_contact:
             font-family: Arial, sans-serif;
         ">
             <strong style="color: #006064; display: block; margin-bottom: 4px;">APP Support</strong>
-            <div style="font-size: 13px; color: #333;">
+            <div style="font-size: 15px; color: #333;">
                 Xiaojing Sui: <a href="mailto:xiaojing.sui@northwestern.edu" style="color: #006064; text-weight: bold;">xiaojing.sui@northwestern.edu</a>
             </div>
         </div>
