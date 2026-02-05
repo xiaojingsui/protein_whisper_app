@@ -629,8 +629,8 @@ elif page == "Guides":
         * **Colored dots:** Significant peptides.
     
     **How to Interact:**
-    * 🖱️ **Hover over the Plot:** Hovering over a dot highlights that specific peptide sequence in **Yellow** on the 3D structure.
-    * 🧬 **Hover over the Structure:** Hovering over the protein residues highlights the corresponding data point on the volcano plot (the dot becomes larger).
+    * **Hover over the Plot:** Hovering over a dot highlights that specific peptide sequence in **Yellow** on the 3D structure.
+    * **Hover over the Structure:** Hovering over the protein residues highlights the corresponding data point on the volcano plot (the dot becomes larger).
     """)
 
     st.markdown("---")
