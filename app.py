@@ -31,8 +31,9 @@ st.set_page_config(
 st.markdown("""
     <style>
     /* --- 1. GLOBAL FONTS (FIXED) --- */
-    html, body, p, h1, h2, h3, h4, h5, h6, li, a, label, button, input, select, textarea {
-    font-family: Arial, Helvetica, sans-serif !important;
+    html, body, p, h1, h2, h3, h4, h5, h6, li, a, label, button, input, select, textarea,
+    [data-testid="stTextInput"] input {  /* <--- ADD THIS LINE */
+        font-family: Arial, Helvetica, sans-serif !important;
     }
     
     /* --- 2. HEADER & SIDEBAR TOGGLE FIX --- */
