@@ -727,15 +727,17 @@ elif page == "Search":
                 # 2. Setup Columns for Side-by-Side Layout
                 ab_col1, ab_col2 = st.columns(2)
 
-                # 3. plotting helper function with TIGHTER offset
-                def plot_with_pval(ax, x, y, pvals, labels, y_label=False):
-                    # Draw Bars
-                    bars = ax.bar(x, y, fill=False, edgecolor="black", width=0.6)
+                # 3. Plotting helper function (Updated with bar_width argument)
+                def plot_with_pval(ax, x, y, pvals, labels, y_label=True, bar_width=0.6):
+                    # Draw Bars with custom width
+                    bars = ax.bar(x, y, fill=False, edgecolor="black", width=bar_width)
                     ax.axhline(0, color='grey', linewidth=0.8)
                     
                     # Axis Styling
                     ax.set_xticks(x)
                     ax.set_xticklabels(labels, fontsize=8, fontname='Arial')
+                    
+                    # Always show Y-axis label if requested
                     if y_label:
                         ax.set_ylabel(r"Log$_2$ Fold Change", fontsize=8, fontname='Arial')
                     
@@ -743,14 +745,13 @@ elif page == "Search":
                     for label in ax.get_yticklabels() + ax.get_xticklabels():
                         label.set_fontname('Arial')
 
-                    # --- CALCULATE DYNAMIC OFFSET (TIGHTER) ---
+                    # --- CALCULATE DYNAMIC OFFSET ---
                     if len(y) > 0:
                         y_max = max(max(y), 0)
                         y_min = min(min(y), 0)
                         y_range = abs(y_max - y_min)
                         if y_range == 0: y_range = 1.0 
-                        # Reduced from 0.15 (15%) to 0.05 (5%) to bring text closer
-                        offset = y_range * 0.05  
+                        offset = y_range * 0.05  # 5% offset
                     else:
                         offset = 0.1
 
@@ -760,7 +761,7 @@ elif page == "Search":
                         # Format P
                         p_str = f"p={p:.1e}" if p < 0.001 else f"p={p:.3f}"
                         
-                        # Position: Above if positive, Below if negative
+                        # Position logic
                         if height >= 0:
                             y_pos = height + offset
                             va = 'bottom'
@@ -771,28 +772,31 @@ elif page == "Search":
                         ax.text(bar.get_x() + bar.get_width()/2, y_pos, p_str,
                                 ha='center', va=va, fontsize=7, fontname='Arial', color='black')
                     
-                    # Expand margins to ensure text fits
-                    ax.margins(y=0.25)
+                    # Ensure Auto-scaling works for every condition
+                    ax.autoscale(enable=True, axis='y', tight=False)
+                    ax.margins(y=0.25) # Add padding so text fits
 
-                # --- PLOT 1: Solubility Changes (Narrower) ---
+                # --- PLOT 1: Solubility Changes ---
                 with ab_col1:
                     st.subheader("Solubility Changes")
-                    # Reduced Width: 2.2 -> 1.8
+                    # Width: 1.8
                     fig1, ax1 = plt.subplots(figsize=(1.8, 1.8))
                     
+                    # Standard width (0.6)
                     plot_with_pval(ax1, [0, 1], [fc_sol, fc_pel], [p_sol, p_pel], 
-                                   ["Soluble", "Pellet"], y_label=True)
+                                   ["Soluble", "Pellet"], y_label=True, bar_width=0.6)
                     
                     st.pyplot(fig1, use_container_width=False)
 
-                # --- PLOT 2: Total Abundance (Narrower) ---
+                # --- PLOT 2: Total Abundance ---
                 with ab_col2:
                     st.subheader("Total Abundance Changes")
-                    # Reduced Width: 1.3 -> 1.0
-                    fig2, ax2 = plt.subplots(figsize=(1.0, 1.8))
+                    # Width: 1.2 (Slightly wider to accommodate Y-axis label)
+                    fig2, ax2 = plt.subplots(figsize=(1.2, 1.8))
                     
+                    # Half width (0.3), Y-label Enabled
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
-                                   ["Total"], y_label=False)
+                                   ["Total"], y_label=True, bar_width=0.3)
 
                     st.pyplot(fig2, use_container_width=False)
 
