@@ -57,7 +57,7 @@ st.markdown("""
 
     /* --- 3. LAYOUT PADDING --- */
     .block-container {
-        padding-top: -1rem !important; 
+        padding-top: 0rem !important; 
         padding-bottom: 5rem !important;
     }
 
