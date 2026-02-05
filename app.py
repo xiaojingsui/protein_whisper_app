@@ -136,7 +136,7 @@ st.markdown("""
     }
 
     div[data-testid="stSidebar"] .stButton > button:hover {
-        color: #19CFE2 !important;      
+        color: #19CFE2 !important;       
         text-decoration: none !important;
     }
     
@@ -911,3 +911,29 @@ elif page == "Search":
 
             else:
                 st.write("No abundance data available.")
+
+# ============================================================
+# FOOTER / CONTACT INFO (Added to Right Bottom Corner)
+# ============================================================
+st.write("")
+st.write("")
+st.write("")
+
+# Layout columns to position the box on the far right
+# 3:1 Ratio creates a "bottom right corner" effect
+col_space, col_contact = st.columns([3, 1.5]) 
+
+with col_contact:
+    st.markdown("""
+        <div style="
+            border-left: 5px solid #006064; 
+            background-color: transparent; 
+            padding: 8px 12px; 
+            font-family: Arial, sans-serif;
+        ">
+            <strong style="color: #006064; display: block; margin-bottom: 4px;">APP Support</strong>
+            <div style="font-size: 13px; color: #333;">
+                Xiaojing Sui: <a href="mailto:xiaojing.sui@northwestern.edu" style="color: #006064; text-weight: bold;">xiaojing.sui@northwestern.edu</a>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
