@@ -711,9 +711,9 @@ elif page == "Search":
                     if fc_col in prot_abun.columns and pd.notna(prot_abun[fc_col].values[0]):
                         fc = float(prot_abun[fc_col].values[0])
                     
-                    # P-value (Assuming column naming convention matches)
+                    # P-value 
                     pval_col = f"AdjPval({selected_condition}).{suffix}"
-                    pval = 1.0 # Default to nonsig if missing
+                    pval = 1.0 
                     if pval_col in prot_abun.columns and pd.notna(prot_abun[pval_col].values[0]):
                         pval = float(prot_abun[pval_col].values[0])
                     
@@ -727,7 +727,7 @@ elif page == "Search":
                 # 2. Setup Columns for Side-by-Side Layout
                 ab_col1, ab_col2 = st.columns(2)
 
-                # 3. plotting helper function to standardize look & annotation
+                # 3. plotting helper function with DYNAMIC offset
                 def plot_with_pval(ax, x, y, pvals, labels, y_label=False):
                     # Draw Bars
                     bars = ax.bar(x, y, fill=False, edgecolor="black", width=0.6)
@@ -743,26 +743,40 @@ elif page == "Search":
                     for label in ax.get_yticklabels() + ax.get_xticklabels():
                         label.set_fontname('Arial')
 
+                    # --- CALCULATE DYNAMIC OFFSET ---
+                    # Calculate range to ensure text isn't too far or too close
+                    if len(y) > 0:
+                        y_max = max(max(y), 0)
+                        y_min = min(min(y), 0)
+                        y_range = abs(y_max - y_min)
+                        if y_range == 0: y_range = 1.0 # prevent zero error
+                        offset = y_range * 0.15  # Set offset to 15% of the total height
+                    else:
+                        offset = 0.1
+
                     # Add P-value Text
                     for bar, p in zip(bars, pvals):
                         height = bar.get_height()
-                        # Format P: scientific if small, otherwise decimal
+                        # Format P
                         p_str = f"p={p:.1e}" if p < 0.001 else f"p={p:.3f}"
                         
                         # Position: Above if positive, Below if negative
-                        y_pos = height + (0.2 if height >= 0 else -0.3) 
-                        va = 'bottom' if height >= 0 else 'top'
+                        if height >= 0:
+                            y_pos = height + offset
+                            va = 'bottom'
+                        else:
+                            y_pos = height - offset
+                            va = 'top'
                         
                         ax.text(bar.get_x() + bar.get_width()/2, y_pos, p_str,
                                 ha='center', va=va, fontsize=7, fontname='Arial', color='black')
                     
-                    # Expand margins so text fits
+                    # Expand margins to ensure text fits within the figure
                     ax.margins(y=0.25)
 
-                # --- PLOT 1: Solubility Changes (Half Size) ---
+                # --- PLOT 1: Solubility Changes ---
                 with ab_col1:
                     st.subheader("Solubility Changes")
-                    # Reduced Size: (2.2, 1.8)
                     fig1, ax1 = plt.subplots(figsize=(2.2, 1.8))
                     
                     plot_with_pval(ax1, [0, 1], [fc_sol, fc_pel], [p_sol, p_pel], 
@@ -770,10 +784,9 @@ elif page == "Search":
                     
                     st.pyplot(fig1, use_container_width=False)
 
-                # --- PLOT 2: Total Abundance (Half Size) ---
+                # --- PLOT 2: Total Abundance ---
                 with ab_col2:
                     st.subheader("Total Abundance Changes")
-                    # Reduced Size: (1.3, 1.8)
                     fig2, ax2 = plt.subplots(figsize=(1.3, 1.8))
                     
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
