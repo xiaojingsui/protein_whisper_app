@@ -783,24 +783,27 @@ elif page == "Search":
                     ax.margins(y=0.25)
 
                 # --- PLOT 1: Solubility Changes ---
+                # --- PLOT 1: Solubility Changes ---
                 with ab_col1:
-                    st.subheader("Solubility Changes")
+                    # CHANGE THIS LINE: (Was st.subheader)
+                    st.markdown("#### Solubility Changes") 
+                    
                     fig1, ax1 = plt.subplots(figsize=(1.8, 1.8))
                     
-                    # Standard width (0.6)
                     plot_with_pval(ax1, [0, 1], [fc_sol, fc_pel], [p_sol, p_pel], 
                                    ["Soluble", "Pellet"], ylabel_text=dynamic_ylabel, bar_width=0.6)
                     
                     st.pyplot(fig1, use_container_width=False)
 
-                # --- PLOT 2: Total Abundance ---
+                # --- PLOT 2: Total Abundance Changes ---
                 with ab_col2:
-                    st.subheader("Total Abundance Changes")
-                    fig2, ax2 = plt.subplots(figsize=(1, 1.8))
+                    # CHANGE THIS LINE: (Was st.subheader)
+                    st.markdown("#### Total Abundance Changes")
                     
-                    # CHANGED: Reduced bar_width from 0.2 to 0.1
+                    fig2, ax2 = plt.subplots(figsize=(1.2, 1.8))
+                    
                     plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
-                                   ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.6)
+                                   ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.1)
 
                     st.pyplot(fig2, use_container_width=False)
 
