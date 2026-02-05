@@ -801,7 +801,7 @@ elif page == "Search":
                     st.markdown("#### Total Abundance Changes")
                     
                     # 2. Create Plot
-                    fig2, ax2 = plt.subplots(figsize=(1.2, 1.8))
+                    fig2, ax2 = plt.subplots(figsize=(1, 1.8))
                     
                     # 3. Plot Data
                     # Increased bar_width to 0.5 (standard look)
