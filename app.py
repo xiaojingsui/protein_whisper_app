@@ -599,6 +599,8 @@ elif page == "Search":
                 st.markdown(f"### Protein: **{gene}** ({desc}) ([{uniprot}](https://www.uniprot.org/uniprot/{uniprot}))")
             else:
                 st.markdown(f"### Protein: **{gene}** ([{uniprot}](https://www.uniprot.org/uniprot/{uniprot}))")
+
+            st.markdown("#### Protein Conformational Changes")
             
             # --- Filtering ---
             avg_col = f"AvgLog₂({selected_condition}).conformation"
