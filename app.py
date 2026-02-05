@@ -29,10 +29,6 @@ st.set_page_config(
 st.markdown("""
     <style>
     /* --- 1. GLOBAL FONTS (FIXED) --- */
-    /* We target 'html' and 'body' generally, and then specific text tags.
-       CRITICAL FIX: We DO NOT target 'div', 'span', or 'i' globally. 
-       Targeting those breaks Streamlit's icons (rendering them as text).
-    */
     html, body, p, h1, h2, h3, h4, h5, h6, li, a, label, button, input, select, textarea {
         font-family: Arial, Helvetica, sans-serif !important;
     }
@@ -525,6 +521,22 @@ page = st.radio(
     label_visibility="collapsed"
 )
 
+# ============================================================
+# DYNAMIC SIDEBAR VISIBILITY LOGIC
+# ============================================================
+# If the user is on 'About' or 'Guides', we inject CSS to completely hide the sidebar.
+if page in ["About", "Guides"]:
+    st.markdown("""
+        <style>
+        [data-testid="stSidebar"] {
+            display: none !important;
+        }
+        [data-testid="stSidebarCollapsedControl"] {
+            display: none !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
 # SPACER for fixed navbar
 st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
 
@@ -533,25 +545,20 @@ st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
 # ============================================================
 
 if page == "About":
-    with st.sidebar:
-        st.info("Navigate to the **Search** tab to explore proteins.")
-    
-    st.title("About Protein Whisper")
+    # Revised text based on the uploaded image
+    st.markdown("<h1>About Protein Whisper</h1>", unsafe_allow_html=True)
     st.markdown("""
-    **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. 
-    It allows researchers to map peptide-level structural alterations directly onto 3D protein structures.
+    **Protein Whisper** is an interactive visualization tool designed to explore Limited Proteolysis-Mass Spectrometry (LiP-MS) data. It allows researchers to map peptide-level structural alterations directly onto 3D protein structures.
     """)
 
 elif page == "Guides":
-    with st.sidebar:
-        st.info("Navigate to the **Search** tab to explore proteins.")
-
+    # Removed sidebar instructions here as requested
     st.title("User Guide")
     st.markdown("### 1. How to Search")
     st.info("Click the **Search** tab above to begin.")
 
 elif page == "Search":
-    # --- Sidebar for inputs ---
+    # --- Sidebar for inputs (ONLY Visible here) ---
     with st.sidebar:
         st.header("Search Parameters")
         
