@@ -698,111 +698,114 @@ elif page == "Search":
                 st.info("💡 **Interactive:** Hover over a dot on the volcano plot to see it on the structure. Grey dots are non-significant.")
 
             # --- Abundance Plot ---
-            st.markdown("---")
+st.markdown("---")
+
+# 1. FORCE ARIAL GLOBALLY
+plt.rcParams.update({
+    'font.family': 'sans-serif',
+    'font.sans-serif': ['Arial'],
+    'axes.unicode_minus': False
+})
+
+prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
+
+if not prot_abun.empty:
+    # 2. Helper to fetch Data
+    def get_data(suffix):
+        fc_col = f"AvgLog2({selected_condition}).{suffix}"
+        fc = 0.0
+        if fc_col in prot_abun.columns and pd.notna(prot_abun[fc_col].values[0]):
+            fc = float(prot_abun[fc_col].values[0])
+        
+        pval_col = f"AdjPval({selected_condition}).{suffix}"
+        pval = 1.0 
+        if pval_col in prot_abun.columns and pd.notna(prot_abun[pval_col].values[0]):
+            pval = float(prot_abun[pval_col].values[0])
+        
+        return fc, pval
+
+    fc_sol, p_sol = get_data("soluble")
+    fc_pel, p_pel = get_data("pellet")
+    fc_tot, p_tot = get_data("total")
+
+    # 3. Setup Columns
+    ab_col1, ab_col2 = st.columns(2)
+
+    # 4. Define Dynamic Y-Axis Label
+    dynamic_ylabel = f"Log\u2082 ({selected_condition})"
+
+    # 5. Plotting Helper
+    def plot_with_pval(ax, x, y, pvals, labels, ylabel_text=None, bar_width=0.6):
+        # Draw Bars
+        bars = ax.bar(x, y, fill=False, edgecolor="black", width=bar_width)
+        ax.axhline(0, color='grey', linewidth=0.8)
+        
+        # X-Axis Styling (Force Arial)
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, fontsize=8, fontname='Arial')
+        
+        # Y-Axis Label (Force Arial)
+        if ylabel_text:
+            ax.set_ylabel(ylabel_text, fontsize=8, fontname='Arial')
+        
+        # General Tick Styling (Force Arial)
+        ax.tick_params(axis='both', labelsize=8)
+        for label in ax.get_yticklabels() + ax.get_xticklabels():
+            label.set_fontname('Arial')
+
+        # --- DYNAMIC TEXT OFFSET ---
+        if len(y) > 0:
+            y_max = max(max(y), 0)
+            y_min = min(min(y), 0)
+            y_range = abs(y_max - y_min)
+            if y_range == 0: y_range = 1.0 
+            offset = y_range * 0.05
+        else:
+            offset = 0.1
+
+        # Add P-value Text (Force Arial)
+        for bar, p in zip(bars, pvals):
+            height = bar.get_height()
+            p_str = f"p={p:.1e}" if p < 0.001 else f"p={p:.3f}"
             
-            # 1. FORCE ARIAL GLOBALLY
-            plt.rcParams.update({
-                'font.family': 'sans-serif',
-                'font.sans-serif': ['Arial'],
-                'axes.unicode_minus': False
-            })
-            
-            prot_abun = abun_df[abun_df["uniprot_id"] == uniprot]
-
-            if not prot_abun.empty:
-                # 2. Helper to fetch Data
-                def get_data(suffix):
-                    fc_col = f"AvgLog₂({selected_condition}).{suffix}"
-                    fc = 0.0
-                    if fc_col in prot_abun.columns and pd.notna(prot_abun[fc_col].values[0]):
-                        fc = float(prot_abun[fc_col].values[0])
-                    
-                    pval_col = f"AdjPval({selected_condition}).{suffix}"
-                    pval = 1.0 
-                    if pval_col in prot_abun.columns and pd.notna(prot_abun[pval_col].values[0]):
-                        pval = float(prot_abun[pval_col].values[0])
-                    
-                    return fc, pval
-
-                fc_sol, p_sol = get_data("soluble")
-                fc_pel, p_pel = get_data("pellet")
-                fc_tot, p_tot = get_data("total")
-
-                # 3. Setup Columns
-                ab_col1, ab_col2 = st.columns(2)
-
-                # 4. Define Dynamic Y-Axis Label
-                dynamic_ylabel = f"Log\u2082 ({selected_condition})"
-
-                # 5. Plotting Helper
-                def plot_with_pval(ax, x, y, pvals, labels, ylabel_text=None, bar_width=0.6):
-                    # Draw Bars
-                    bars = ax.bar(x, y, fill=False, edgecolor="black", width=bar_width)
-                    ax.axhline(0, color='grey', linewidth=0.8)
-                    
-                    # X-Axis Styling (Force Arial)
-                    ax.set_xticks(x)
-                    ax.set_xticklabels(labels, fontsize=8, fontname='Arial')
-                    
-                    # Y-Axis Label (Force Arial)
-                    if ylabel_text:
-                        ax.set_ylabel(ylabel_text, fontsize=8, fontname='Arial')
-                    
-                    # General Tick Styling (Force Arial)
-                    ax.tick_params(axis='both', labelsize=8)
-                    for label in ax.get_yticklabels() + ax.get_xticklabels():
-                        label.set_fontname('Arial')
-
-                    # --- DYNAMIC TEXT OFFSET ---
-                    if len(y) > 0:
-                        y_max = max(max(y), 0)
-                        y_min = min(min(y), 0)
-                        y_range = abs(y_max - y_min)
-                        if y_range == 0: y_range = 1.0 
-                        offset = y_range * 0.05
-                    else:
-                        offset = 0.1
-
-                    # Add P-value Text (Force Arial)
-                    for bar, p in zip(bars, pvals):
-                        height = bar.get_height()
-                        p_str = f"p={p:.1e}" if p < 0.001 else f"p={p:.3f}"
-                        
-                        if height >= 0:
-                            y_pos = height + offset
-                            va = 'bottom'
-                        else:
-                            y_pos = height - offset
-                            va = 'top'
-                        
-                        ax.text(bar.get_x() + bar.get_width()/2, y_pos, p_str,
-                                ha='center', va=va, fontsize=7, fontname='Arial', color='black')
-                    
-                    # Ensure Auto-scaling
-                    ax.autoscale(enable=True, axis='y', tight=False)
-                    ax.margins(y=0.25)
-
-                # --- PLOT 1: Solubility Changes ---
-                with ab_col1:
-                    st.subheader("Solubility Changes")
-                    fig1, ax1 = plt.subplots(figsize=(1.8, 1.8))
-                    
-                    # Standard width (0.6)
-                    plot_with_pval(ax1, [0, 1], [fc_sol, fc_pel], [p_sol, p_pel], 
-                                   ["Soluble", "Pellet"], ylabel_text=dynamic_ylabel, bar_width=0.6)
-                    
-                    st.pyplot(fig1, use_container_width=False)
-
-                # --- PLOT 2: Total Abundance ---
-                with ab_col2:
-                    st.subheader("Total Abundance Changes")
-                    fig2, ax2 = plt.subplots(figsize=(1.2, 1.8))
-                    
-                    # CHANGED: Reduced bar_width from 0.2 to 0.1
-                    plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
-                                   ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.1)
-
-                    st.pyplot(fig2, use_container_width=False)
-
+            if height >= 0:
+                y_pos = height + offset
+                va = 'bottom'
             else:
-                st.write("No abundance data available.")
+                y_pos = height - offset
+                va = 'top'
+            
+            ax.text(bar.get_x() + bar.get_width()/2, y_pos, p_str,
+                    ha='center', va=va, fontsize=7, fontname='Arial', color='black')
+        
+        # Ensure Auto-scaling
+        ax.autoscale(enable=True, axis='y', tight=False)
+        ax.margins(y=0.25)
+
+    # --- PLOT 1: Solubility Changes ---
+    with ab_col1:
+        st.subheader("Solubility Changes")
+        fig1, ax1 = plt.subplots(figsize=(1.8, 1.8))
+        
+        # Standard width (0.6)
+        plot_with_pval(ax1, [0, 1], [fc_sol, fc_pel], [p_sol, p_pel], 
+                       ["Soluble", "Pellet"], ylabel_text=dynamic_ylabel, bar_width=0.6)
+        
+        st.pyplot(fig1, use_container_width=False)
+
+    # --- PLOT 2: Total Abundance ---
+    with ab_col2:
+        st.subheader("Total Abundance Changes")
+        fig2, ax2 = plt.subplots(figsize=(1.2, 1.8))
+        
+        # UPDATED: Changed width to 0.5
+        plot_with_pval(ax2, [0], [fc_tot], [p_tot], 
+                       ["Total"], ylabel_text=dynamic_ylabel, bar_width=0.5)
+
+        # UPDATED: Added xlim to prevent the single bar from filling the whole width
+        ax2.set_xlim(-0.8, 0.8)
+
+        st.pyplot(fig2, use_container_width=False)
+
+else:
+    st.write("No abundance data available.")
